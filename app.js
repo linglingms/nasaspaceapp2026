@@ -1,30 +1,51 @@
 const scenarios = {
   conventional: {
     name: "Conventional rotation",
-    moisture: "0.15",
+    moisture: 0.15,
     meter: 50,
     health: "At risk",
     resilience: "Low",
     recommendation: "Baseline",
     tone: "neutral",
+    waterDemand: "High",
+    soilEffect: "Continued nutrient removal",
+    tradeoff: "Most familiar operation, but leaves soil exposed between cash crops.",
+    explanation:
+      "This is the comparison baseline: the field follows the existing crop sequence without a cover crop. It may be simpler to operate, but bare periods can increase evaporation, runoff, and erosion, especially when drought risk is elevated.",
+    assumptions: "Uses the current crop sequence and the area's recent moisture conditions.",
+    confidence: "Illustrative baseline",
   },
   "cover-crops": {
     name: "Rotation + cover crops",
-    moisture: "0.19",
+    moisture: 0.19,
     meter: 76,
     health: "Stable",
     resilience: "Higher",
     recommendation: "Best illustrative outcome",
     tone: "",
+    waterDemand: "Moderate",
+    soilEffect: "Improved cover and organic matter",
+    tradeoff: "May require seed, planting time, and water during establishment.",
+    explanation:
+      "A cover crop keeps living roots and residue on the field between primary crops. That can reduce direct soil evaporation and runoff while improving infiltration and soil structure. The benefit is strongest when the cover crop is terminated before it competes heavily for water.",
+    assumptions: "Assumes timely establishment, appropriate species selection, and termination before peak water demand.",
+    confidence: "Illustrative, moderate confidence",
   },
   alternative: {
     name: "Alternative cover crop mix",
-    moisture: "0.18",
+    moisture: 0.18,
     meter: 68,
     health: "Stable",
     resilience: "Moderate",
     recommendation: "Promising alternative",
     tone: "",
+    waterDemand: "Low–moderate",
+    soilEffect: "Targeted nutrient and residue benefits",
+    tradeoff: "More flexible, but results depend on the selected species mix.",
+    explanation:
+      "This option uses a lower-water or locally adapted cover crop mix. It aims to retain some soil-cover and rooting benefits while reducing establishment risk. It is a useful compromise when a full cover-crop program could use too much water.",
+    assumptions: "Assumes the mix is matched to local rainfall, soil type, planting window, and termination method.",
+    confidence: "Illustrative, moderate confidence",
   },
 };
 
@@ -35,26 +56,44 @@ const elements = {
   health: document.querySelector("#health-value"),
   resilience: document.querySelector("#resilience-value"),
   recommendation: document.querySelector("#recommendation"),
+  waterDemand: document.querySelector("#water-demand-value"),
+  soilEffect: document.querySelector("#soil-effect-value"),
+  tradeoff: document.querySelector("#scenario-tradeoff"),
+  explanation: document.querySelector("#scenario-explanation"),
+  assumptions: document.querySelector("#scenario-assumptions"),
+  confidence: document.querySelector("#confidence-value"),
 };
 
 function selectScenario(key) {
   const scenario = scenarios[key];
+  if (!scenario) return;
   elements.name.textContent = scenario.name;
-  elements.moisture.textContent = scenario.moisture;
+  elements.moisture.textContent = scenario.moisture.toFixed(2);
   elements.meter.style.width = `${scenario.meter}%`;
   elements.health.textContent = scenario.health;
   elements.resilience.textContent = scenario.resilience;
   elements.recommendation.textContent = scenario.recommendation;
   elements.recommendation.className = `recommendation ${scenario.tone}`;
+  elements.waterDemand.textContent = scenario.waterDemand;
+  elements.soilEffect.textContent = scenario.soilEffect;
+  elements.tradeoff.textContent = scenario.tradeoff;
+  elements.explanation.textContent = scenario.explanation;
+  elements.assumptions.textContent = scenario.assumptions;
+  elements.confidence.textContent = scenario.confidence;
 
   document.querySelectorAll(".strategy").forEach((button) => {
     button.classList.toggle("active", button.dataset.strategy === key);
+    button.setAttribute("aria-pressed", button.dataset.strategy === key);
+    const value = scenarios[button.dataset.strategy]?.moisture;
+    if (value !== undefined) button.querySelector(".strategy-value").textContent = value.toFixed(2);
   });
 }
 
 document.querySelectorAll(".strategy").forEach((button) => {
   button.addEventListener("click", () => selectScenario(button.dataset.strategy));
 });
+
+selectScenario("conventional");
 
 const areas = {
   "great-plains": {

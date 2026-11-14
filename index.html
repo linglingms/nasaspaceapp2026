@@ -211,19 +211,22 @@
         <div class="section-heading">
           <p class="eyebrow">Decision support</p>
           <h2 id="simulator-title">Rotation scenario simulator</h2>
-          <p>Select a strategy to see its illustrative outcome for Field A.</p>
+          <p>
+            Select a strategy to compare the expected soil response, resource demand,
+            benefits, and implementation tradeoffs for the selected area.
+          </p>
         </div>
         <div class="simulator">
           <div class="strategy-list" role="group" aria-label="Rotation strategies">
-            <button class="strategy active" data-strategy="conventional">
+            <button class="strategy active" data-strategy="conventional" aria-pressed="true">
               <span><strong>Strategy A</strong><small>Conventional rotation</small></span>
               <span class="strategy-value">0.15</span>
             </button>
-            <button class="strategy" data-strategy="cover-crops">
+            <button class="strategy" data-strategy="cover-crops" aria-pressed="false">
               <span><strong>Strategy B</strong><small>Rotation + cover crops</small></span>
               <span class="strategy-value">0.19</span>
             </button>
-            <button class="strategy" data-strategy="alternative">
+            <button class="strategy" data-strategy="alternative" aria-pressed="false">
               <span><strong>Strategy C</strong><small>Alternative cover crop mix</small></span>
               <span class="strategy-value">0.18</span>
             </button>
@@ -238,12 +241,31 @@
             <div class="outcome-grid">
               <div><span>Vegetation health</span><strong id="health-value">At risk</strong></div>
               <div><span>Drought resilience</span><strong id="resilience-value">Low</strong></div>
+              <div><span>Water demand</span><strong id="water-demand-value">High</strong></div>
+              <div><span>Soil effect</span><strong id="soil-effect-value">Continued nutrient removal</strong></div>
               <div><span>Confidence</span><strong id="confidence-value">Illustrative</strong></div>
             </div>
+            <div class="scenario-explanation">
+              <p class="eyebrow">How to interpret this scenario</p>
+              <p id="scenario-explanation">
+                This is the comparison baseline: the field follows the existing crop
+                sequence without a cover crop. It may be simpler to operate, but bare
+                periods can increase evaporation, runoff, and erosion, especially when
+                drought risk is elevated.
+              </p>
+              <div class="scenario-detail">
+                <strong>Primary tradeoff</strong>
+                <span id="scenario-tradeoff">Most familiar operation, but leaves soil exposed between cash crops.</span>
+              </div>
+              <div class="scenario-detail">
+                <strong>Model assumption</strong>
+                <span id="scenario-assumptions">Uses the current crop sequence and the area's recent moisture conditions.</span>
+              </div>
+            </div>
             <p class="notice">
-              These values are illustrative placeholders for the interface. A real
-              deployment must use validated model outputs, local data, and uncertainty
-              estimates before guiding farm decisions.
+              These values are an explanatory baseline, not measured predictions.
+              A production model should replace them with NASA observations, local
+              soil and management data, uncertainty intervals, and validation results.
             </p>
           </div>
         </div>
