@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="TerraCycle AI decision-support prototype" />
+    <title>TerraCycle AI | Rotation Scenario Simulator</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="container header-content">
+        <a class="brand" href="#" aria-label="TerraCycle AI home">
+          <span class="brand-mark">TC</span>
+          <span>TerraCycle <strong>AI</strong></span>
+        </a>
+        <span class="prototype-label">Hackathon prototype</span>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">From evidence to action</p>
+          <h1>What should we plant next season?</h1>
+          <p class="hero-copy">
+            TerraCycle AI combines causal analysis and predictive analysis to help
+            compare crop rotation strategies for healthier, more resilient fields.
+          </p>
+          <a class="button button-primary" href="#simulator">Try the simulator</a>
+        </div>
+        <div class="hero-stat" aria-label="Current field conditions">
+          <span class="stat-label">Selected field</span>
+          <strong>Field A</strong>
+          <span class="status-pill">Forecast: elevated drought risk</span>
+          <div class="stat-grid">
+            <div><span>Soil moisture</span><strong>0.15</strong></div>
+            <div><span>Vegetation stress</span><strong>Elevated</strong></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section purpose-section" aria-labelledby="purpose-title">
+        <div class="purpose-intro">
+          <p class="eyebrow">Why this project exists</p>
+          <h2 id="purpose-title">Helping farmers make resilient rotation decisions.</h2>
+          <p>
+            Farmers worldwide are navigating shifting temperatures, less predictable
+            rainfall, water shortages, extreme weather, and declining soil health.
+            TerraCycle AI turns NASA Earth observations, local soil information, crop
+            characteristics, and farmer priorities into an understandable way to
+            explore possible rotation strategies.
+          </p>
+          <p>
+            This concept responds to the NASA Space Apps challenge: use long-term
+            environmental datasets and science-informed techniques to help farmers
+            protect their fields, conserve water, and strengthen long-term resilience.
+          </p>
+        </div>
+        <div class="questions-card">
+          <p class="eyebrow">The essential questions</p>
+          <ul>
+            <li><strong>What is changing?</strong><span>How are temperature, rainfall, soil moisture, and vegetation conditions shifting?</span></li>
+            <li><strong>What helps?</strong><span>Which rotation choices are associated with healthier soil and vegetation under comparable conditions?</span></li>
+            <li><strong>What comes next?</strong><span>Which options balance water use, growing seasons, disease risk, markets, and farmer priorities?</span></li>
+          </ul>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="how-it-works">
+        <div class="section-heading">
+          <p class="eyebrow">The simple story</p>
+          <h2 id="how-it-works">One dataset. Two questions. One decision.</h2>
+        </div>
+        <div class="flow">
+          <article class="flow-card">
+            <span class="step-number">1</span>
+            <h3>Collect data</h3>
+            <p>NASA observations and farm records describe each field and season.</p>
+            <div class="tag-list">
+              <span>Rainfall</span><span>Soil</span><span>Crop history</span>
+            </div>
+          </article>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <article class="flow-card">
+            <span class="step-number">2</span>
+            <h3>Prepare data</h3>
+            <p>Clean and organize observations by field, season, and rotation.</p>
+            <div class="tag-list"><span>Comparable</span><span>Organized</span></div>
+          </article>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <article class="flow-card">
+            <span class="step-number">3</span>
+            <h3>Analyze</h3>
+            <p>Ask why outcomes changed and what conditions may come next.</p>
+            <div class="tag-list"><span>Why?</span><span>What next?</span></div>
+          </article>
+          <div class="flow-arrow" aria-hidden="true">→</div>
+          <article class="flow-card flow-card-accent">
+            <span class="step-number">4</span>
+            <h3>Decide</h3>
+            <p>Compare strategies with benefits, tradeoffs, and uncertainty.</p>
+            <div class="tag-list"><span>Actionable</span><span>Transparent</span></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="section analysis-grid" aria-labelledby="analysis-engines">
+        <div class="section-heading">
+          <p class="eyebrow">The analysis engines</p>
+          <h2 id="analysis-engines">Two ways to understand the future</h2>
+        </div>
+        <article class="analysis-card causal-card">
+          <div class="card-icon">WHY</div>
+          <h3>Causal analysis</h3>
+          <p class="question">Did cover crops improve the outcome?</p>
+          <ol>
+            <li>Compare fields with and without cover crops.</li>
+            <li>Account for rainfall, soil, temperature, and management.</li>
+            <li>Estimate the likely effect of the strategy.</li>
+          </ol>
+          <div class="result"><span>Illustrative result</span><strong>+0.03 soil moisture</strong></div>
+        </article>
+        <article class="analysis-card predictive-card">
+          <div class="card-icon">NEXT</div>
+          <h3>Predictive analysis</h3>
+          <p class="question">What conditions should we expect next season?</p>
+          <ol>
+            <li>Learn from historical rainfall and temperature.</li>
+            <li>Use previous soil moisture and vegetation patterns.</li>
+            <li>Forecast conditions and evaluate accuracy.</li>
+          </ol>
+          <div class="result"><span>Illustrative forecast</span><strong>Elevated stress risk</strong></div>
+        </article>
+      </section>
+
+      <section class="section simulator-section" id="simulator" aria-labelledby="simulator-title">
+        <div class="section-heading">
+          <p class="eyebrow">Decision support</p>
+          <h2 id="simulator-title">Rotation scenario simulator</h2>
+          <p>Select a strategy to see its illustrative outcome for Field A.</p>
+        </div>
+        <div class="simulator">
+          <div class="strategy-list" role="group" aria-label="Rotation strategies">
+            <button class="strategy active" data-strategy="conventional">
+              <span><strong>Strategy A</strong><small>Conventional rotation</small></span>
+              <span class="strategy-value">0.15</span>
+            </button>
+            <button class="strategy" data-strategy="cover-crops">
+              <span><strong>Strategy B</strong><small>Rotation + cover crops</small></span>
+              <span class="strategy-value">0.19</span>
+            </button>
+            <button class="strategy" data-strategy="alternative">
+              <span><strong>Strategy C</strong><small>Alternative cover crop mix</small></span>
+              <span class="strategy-value">0.18</span>
+            </button>
+          </div>
+          <div class="scenario-result">
+            <div class="result-header">
+              <div><span class="stat-label">Selected strategy</span><h3 id="selected-strategy">Conventional rotation</h3></div>
+              <span id="recommendation" class="recommendation neutral">Baseline</span>
+            </div>
+            <div class="meter-row"><span>Estimated soil moisture</span><strong id="moisture-value">0.15</strong></div>
+            <div class="meter"><span id="moisture-meter" style="width: 50%"></span></div>
+            <div class="outcome-grid">
+              <div><span>Vegetation health</span><strong id="health-value">At risk</strong></div>
+              <div><span>Drought resilience</span><strong id="resilience-value">Low</strong></div>
+              <div><span>Confidence</span><strong id="confidence-value">Illustrative</strong></div>
+            </div>
+            <p class="notice">
+              These values are illustrative placeholders for the interface. A real
+              deployment must use validated model outputs, local data, and uncertainty
+              estimates before guiding farm decisions.
+            </p>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container"><strong>TerraCycle AI</strong><span>Decision support, not automated farm advice.</span></div>
+    </footer>
+    <script src="app.js"></script>
+  </body>
+</html>
