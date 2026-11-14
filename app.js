@@ -98,6 +98,7 @@ const areaElements = {
 
 let selectedAreaKey = "great-plains";
 const areaLayers = {};
+const terrainLayers = {};
 const farmMap = L.map("farm-map", { scrollWheelZoom: false }).setView(
   areas[selectedAreaKey].coordinates,
   areas[selectedAreaKey].zoom,
@@ -141,6 +142,37 @@ Object.entries(areas).forEach(([key, area]) => {
   layer.on("click", () => selectArea(key));
   areaLayers[key] = layer;
 });
+
+function terrainStyle(feature) {
+  const slope = feature.properties.slope_mean_degrees;
+  const color = slope >= 8 ? "#c95b45" : slope >= 3 ? "#d19a3a" : "#4f9d69";
+  return { color, fillColor: color, fillOpacity: 0.28, weight: 2 };
+}
+
+fetch("data/terrain-analysis.geojson")
+  .then((response) => {
+    if (!response.ok) throw new Error(`Terrain data request failed: ${response.status}`);
+    return response.json();
+  })
+  .then((terrainData) => {
+    L.geoJSON(terrainData, {
+      style: terrainStyle,
+      onEachFeature: (feature, layer) => {
+        const { area_key: key, name, slope_mean_degrees: slope, terrain_status: status } =
+          feature.properties;
+        if (!areas[key]) return;
+        layer.bindPopup(
+          `<strong>${name}</strong><br>Mean slope: ${slope ?? "Unavailable"}°<br>Terrain: ${status ?? "Unavailable"}`,
+        );
+        layer.on("click", () => selectArea(key));
+        terrainLayers[key] = layer;
+      },
+    }).addTo(farmMap);
+    areaElements.status.textContent = "NASA DEM terrain layer loaded.";
+  })
+  .catch((error) => {
+    console.info("Terrain layer is not generated yet; using region placeholders.", error);
+  });
 
 document.querySelectorAll(".area-option").forEach((button) => {
   button.addEventListener("click", () => selectArea(button.dataset.area));

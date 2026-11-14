@@ -1,0 +1,38 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "area_key": "great-plains",
+        "name": "Great Plains, USA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-104.5, 37.5], [-98.5, 37.5], [-98.5, 41.5], [-104.5, 41.5], [-104.5, 37.5]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_key": "central-valley",
+        "name": "Central Valley, USA"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[-123, 35.8], [-120, 35.8], [-120, 39], [-123, 39], [-123, 35.8]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "area_key": "east-africa",
+        "name": "East Africa"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[34, -2], [40, -2], [40, 3], [34, 3], [34, -2]]]
+      }
+    }
+  ]
+}

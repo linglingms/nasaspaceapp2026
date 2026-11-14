@@ -66,6 +66,27 @@ the user into the simulator flow.
 These are placeholder regions for demonstrating the interface. They are not live farm
 boundaries, real field measurements, or live NASA data layers yet.
 
+### GeoPandas terrain baseline
+
+The repository now includes a baseline terrain-processing workflow in
+[`scripts/terrain_analysis.py`](./scripts/terrain_analysis.py). It accepts a NASA DEM
+GeoTIFF and the example boundaries in [`data/farming_regions.geojson`](./data/farming_regions.geojson),
+then calculates mean/minimum/maximum elevation, mean slope, and the percentage of
+steep terrain. The generated GeoJSON is loaded automatically by the Leaflet map when
+it exists; otherwise the map keeps its placeholder circles.
+
+Install the optional processing dependencies and run:
+
+```bash
+python3 -m pip install -r requirements-terrain.txt
+python3 scripts/terrain_analysis.py --dem path/to/nasadem.tif
+```
+
+The DEM is intentionally not committed to the repository because NASA raster files
+are large. Use a NASADEM/SRTM GeoTIFF covering the selected regions. The generated
+`data/terrain-analysis.geojson` is a derived artifact and should be regenerated when
+the DEM or boundaries change.
+
 ### Two analysis engines
 
 - **Causal analysis — Why?** Compares fields with and without a strategy while
@@ -91,6 +112,7 @@ confidence label. All values are explicitly illustrative placeholders.
 
 - HTML, CSS, and vanilla JavaScript
 - Leaflet 1.9.4 for the interactive map
+- Optional GeoPandas, Rasterio, and NumPy terrain preprocessing
 - OpenStreetMap tiles and attribution
 - No package installation or build step
 - Vercel-compatible static deployment
