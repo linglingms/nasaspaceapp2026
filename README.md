@@ -24,8 +24,16 @@ The numbers in the simulator are explicitly illustrative placeholders. They shou
 replaced with validated model outputs, uncertainty intervals, and locally relevant data
 before the interface is used for real farm decisions.
 
-## Deployment
+## Deployment with Vercel
 
-The site is configured to deploy through GitHub Pages using
-[.github/workflows/deploy-pages.yml](./.github/workflows/deploy-pages.yml). After the
-workflow completes, the repository's GitHub Pages settings will provide the public URL.
+This is a static site and does not need a build command. To deploy it with Vercel:
+
+1. Sign in at [vercel.com/new](https://vercel.com/new).
+2. Import `linglingms/nasaspaceapp2026` from GitHub.
+3. Keep the framework preset as **Other**.
+4. Leave the build command empty and set the output directory to `.`.
+5. Select **Deploy**.
+
+The repository includes [vercel.json](./vercel.json) with the static-site settings.
+Future pushes to `main` will be deployed automatically by Vercel after the repository
+is connected.
