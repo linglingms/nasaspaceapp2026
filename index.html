@@ -64,7 +64,7 @@
             TerraCycle AI combines causal analysis and predictive analysis to help
             compare crop rotation strategies for healthier, more resilient fields.
           </p>
-          <a class="button button-primary" href="#simulator">Try the simulator</a>
+          <a class="button button-primary" href="#survey">Start the survey</a>
         </div>
         <div class="hero-stat" aria-label="Current field conditions">
           <span class="stat-label">Selected area</span>
@@ -335,6 +335,111 @@
               <div><strong>Watch for</strong><span>Species competition and management complexity</span></div>
             </div>
           </article>
+        </div>
+      </section>
+
+      <section class="section survey-section" id="survey" aria-labelledby="survey-title">
+        <div class="section-heading">
+          <p class="eyebrow">Personalized planning</p>
+          <h2 id="survey-title">Tell us about your farm</h2>
+          <p>
+            Answer a few questions to compare the three rotation strategies against
+            your water conditions, priorities, season, and practical constraints.
+          </p>
+        </div>
+        <div class="survey-card">
+          <div class="survey-progress" aria-live="polite">
+            <span id="survey-step-label">Question 1 of 7</span>
+            <div class="survey-progress-track"><span id="survey-progress-bar"></span></div>
+          </div>
+          <form id="farm-survey" novalidate>
+            <fieldset class="survey-step active" data-step="1">
+              <legend>Where is your farm?</legend>
+              <p class="survey-help">We will use the selected focus area as the climate context for this prototype.</p>
+              <label for="farm-location">Farm address, map location, or county</label>
+              <input id="farm-location" name="location" type="text" placeholder="Example: Whitman County, WA" required />
+            </fieldset>
+            <fieldset class="survey-step" data-step="2" hidden>
+              <legend>What have you grown in the past 3 years?</legend>
+              <p class="survey-help">Select the crops that describe your recent rotation.</p>
+              <div class="survey-options survey-options-grid">
+                <label><input type="checkbox" name="pastCrops" value="wheat" /> Wheat</label>
+                <label><input type="checkbox" name="pastCrops" value="corn" /> Corn</label>
+                <label><input type="checkbox" name="pastCrops" value="sorghum" /> Sorghum</label>
+                <label><input type="checkbox" name="pastCrops" value="rice" /> Rice</label>
+                <label><input type="checkbox" name="pastCrops" value="beans" /> Beans</label>
+                <label><input type="checkbox" name="pastCrops" value="other" /> Other</label>
+              </div>
+            </fieldset>
+            <fieldset class="survey-step" data-step="3" hidden>
+              <legend>Do you have a planting season in mind?</legend>
+              <div class="survey-options">
+                <label><input type="radio" name="season" value="spring" required /> Spring</label>
+                <label><input type="radio" name="season" value="summer" /> Summer</label>
+                <label><input type="radio" name="season" value="fall" /> Fall</label>
+                <label><input type="radio" name="season" value="winter" /> Winter</label>
+                <label><input type="radio" name="season" value="unsure" /> Not sure yet — help me decide</label>
+              </div>
+            </fieldset>
+            <fieldset class="survey-step" data-step="4" hidden>
+              <legend>How is your field watered?</legend>
+              <div class="survey-options">
+                <label><input type="radio" name="water" value="rainfed" required /> Rainfed / Dryland — no irrigation</label>
+                <label><input type="radio" name="water" value="irrigated" /> Irrigated — irrigation available</label>
+                <label><input type="radio" name="water" value="partial" /> Partially irrigated</label>
+                <label><input type="radio" name="water" value="unknown" /> I’m not sure</label>
+              </div>
+            </fieldset>
+            <fieldset class="survey-step" data-step="5" hidden>
+              <legend>What matters most to you?</legend>
+              <p class="survey-help">Choose up to two priorities.</p>
+              <div class="survey-options">
+                <label><input type="checkbox" name="priorities" value="profit" /> Earn more profit</label>
+                <label><input type="checkbox" name="priorities" value="water" /> Use less water</label>
+                <label><input type="checkbox" name="priorities" value="soil" /> Improve soil health</label>
+                <label><input type="checkbox" name="priorities" value="risk" /> Reduce crop risks</label>
+                <label><input type="checkbox" name="priorities" value="yield" /> Maintain stable yields</label>
+              </div>
+              <p id="priority-limit" class="survey-feedback" aria-live="polite"></p>
+            </fieldset>
+            <fieldset class="survey-step" data-step="6" hidden>
+              <legend>Are there any crops you cannot or prefer not to grow?</legend>
+              <p class="survey-help">This optional answer helps account for practical constraints.</p>
+              <div class="survey-options">
+                <label><input type="checkbox" name="constraints" value="equipment" /> I don’t have the required equipment</label>
+                <label><input type="checkbox" name="constraints" value="market" /> I don’t have a reliable buyer or market</label>
+                <label><input type="checkbox" name="constraints" value="cost" /> The upfront costs may be too high</label>
+                <label><input type="checkbox" name="constraints" value="avoid" /> There are specific crops I want to avoid</label>
+                <label><input type="checkbox" name="constraints" value="none" /> No restrictions / I’m open to suggestions</label>
+              </div>
+            </fieldset>
+            <fieldset class="survey-step" data-step="7" hidden>
+              <legend>Tell us more about your farm</legend>
+              <p class="survey-help">These optional details make future recommendations more precise.</p>
+              <label for="field-size">Field size</label>
+              <input id="field-size" name="fieldSize" type="text" placeholder="Example: 160 acres" />
+              <label for="soil-type">Soil type</label>
+              <input id="soil-type" name="soilType" type="text" placeholder="Example: silt loam" />
+              <label for="budget">Planting budget flexibility</label>
+              <select id="budget" name="budget">
+                <option value="">Select one</option>
+                <option value="limited">Limited</option>
+                <option value="moderate">Moderate</option>
+                <option value="flexible">Flexible</option>
+              </select>
+            </fieldset>
+            <div class="survey-actions">
+              <button class="button button-secondary" id="survey-back" type="button" disabled>Back</button>
+              <button class="button button-primary" id="survey-next" type="button">Next question</button>
+            </div>
+          </form>
+          <div id="survey-result" class="survey-result" hidden aria-live="polite">
+            <p class="eyebrow">Your starting recommendation</p>
+            <h3 id="survey-recommendation-title"></h3>
+            <p id="survey-recommendation-reason"></p>
+            <div id="survey-score-list" class="survey-score-list"></div>
+            <button class="button button-secondary" id="survey-edit" type="button">Edit answers</button>
+          </div>
         </div>
       </section>
 

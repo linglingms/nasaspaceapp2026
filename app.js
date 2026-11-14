@@ -64,6 +64,174 @@ const elements = {
   confidence: document.querySelector("#confidence-value"),
 };
 
+const survey = {
+  form: document.querySelector("#farm-survey"),
+  steps: [...document.querySelectorAll(".survey-step")],
+  stepLabel: document.querySelector("#survey-step-label"),
+  progressBar: document.querySelector("#survey-progress-bar"),
+  back: document.querySelector("#survey-back"),
+  next: document.querySelector("#survey-next"),
+  result: document.querySelector("#survey-result"),
+  resultTitle: document.querySelector("#survey-recommendation-title"),
+  resultReason: document.querySelector("#survey-recommendation-reason"),
+  scoreList: document.querySelector("#survey-score-list"),
+  edit: document.querySelector("#survey-edit"),
+  priorityLimit: document.querySelector("#priority-limit"),
+  currentStep: 1,
+};
+
+function checkedValues(name) {
+  return [...survey.form.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
+}
+
+function readSurveyAnswers() {
+  const formData = new FormData(survey.form);
+  return {
+    location: formData.get("location")?.trim() || "",
+    pastCrops: checkedValues("pastCrops"),
+    season: formData.get("season") || "",
+    water: formData.get("water") || "",
+    priorities: checkedValues("priorities"),
+    constraints: checkedValues("constraints"),
+    fieldSize: formData.get("fieldSize")?.trim() || "",
+    soilType: formData.get("soilType")?.trim() || "",
+    budget: formData.get("budget") || "",
+  };
+}
+
+function showSurveyStep(step) {
+  survey.currentStep = step;
+  survey.steps.forEach((field, index) => {
+    const active = index + 1 === step;
+    field.hidden = !active;
+    field.classList.toggle("active", active);
+  });
+  survey.stepLabel.textContent = `Question ${step} of ${survey.steps.length}`;
+  survey.progressBar.style.width = `${(step / survey.steps.length) * 100}%`;
+  survey.back.disabled = step === 1;
+  survey.next.textContent = step === survey.steps.length ? "See recommendation" : "Next question";
+}
+
+function validateSurveyStep() {
+  const current = survey.steps[survey.currentStep - 1];
+  const required = current.querySelector("[required]");
+  if (required && !required.checkValidity()) {
+    required.reportValidity();
+    return false;
+  }
+  if (survey.currentStep === 5 && checkedValues("priorities").length === 0) {
+    survey.priorityLimit.textContent = "Choose at least one priority.";
+    return false;
+  }
+  return true;
+}
+
+function calculateRecommendation(answers) {
+  const scores = Object.fromEntries(Object.keys(scenarios).map((key) => [key, 0]));
+  const reasons = [];
+  const priorities = new Set(answers.priorities);
+  const constraints = new Set(answers.constraints);
+
+  if (answers.water === "rainfed") {
+    scores.alternative += 3;
+    scores["cover-crops"] += 1;
+    if (priorities.has("water")) scores.alternative += 1;
+    reasons.push("rainfed conditions favor the lower-water alternative mix");
+  } else if (answers.water === "irrigated") {
+    scores["cover-crops"] += 2;
+    reasons.push("irrigation provides more flexibility for establishing a full cover crop");
+  } else if (answers.water === "partial") {
+    scores.alternative += 2;
+    scores["cover-crops"] += 1;
+    reasons.push("partial irrigation favors a balanced water-demand option");
+  }
+  if (priorities.has("water")) {
+    scores.alternative += 2;
+    scores["cover-crops"] += 1;
+  }
+  if (priorities.has("soil")) scores["cover-crops"] += 2;
+  if (priorities.has("risk") || priorities.has("yield")) {
+    scores["cover-crops"] += 2;
+    scores.alternative += 1;
+  }
+  if (priorities.has("profit")) {
+    scores.conventional += 1;
+    scores.alternative += 1;
+  }
+  if (answers.season === "fall" || answers.season === "winter") {
+    scores["cover-crops"] += 2;
+    reasons.push("a fall or winter window can support soil cover between cash crops");
+  }
+  if (answers.season === "summer") scores.alternative += 1;
+  if (selectedAreaKey === "great-plains") {
+    scores.alternative += 1;
+    reasons.push("the Great Plains focus is water conservation");
+  } else if (selectedAreaKey === "central-valley") {
+    scores["cover-crops"] += 1;
+    reasons.push("the Central Valley focus is water availability and soil protection");
+  } else {
+    scores.alternative += 1;
+    reasons.push("the East Africa focus is rainfall resilience");
+  }
+  if (constraints.has("cost")) {
+    scores.conventional += 1;
+    scores["cover-crops"] -= 1;
+  }
+  if (constraints.has("equipment") || constraints.has("market")) {
+    scores.conventional += 1;
+    scores.alternative -= 1;
+  }
+  if (answers.budget === "limited") {
+    scores.conventional += 1;
+    scores["cover-crops"] -= 1;
+  } else if (answers.budget === "flexible") {
+    scores["cover-crops"] += 1;
+  }
+
+  const ranked = Object.entries(scores).sort(([, first], [, second]) => second - first);
+  return { key: ranked[0][0], scores, reasons };
+}
+
+function showSurveyRecommendation() {
+  const answers = readSurveyAnswers();
+  const recommendation = calculateRecommendation(answers);
+  const scenario = scenarios[recommendation.key];
+  selectScenario(recommendation.key);
+  survey.resultTitle.textContent = scenario.name;
+  survey.resultReason.textContent = `Based on your answers, ${recommendation.reasons.join(", ")}. This is an exploratory recommendation using the simulator's illustrative strategy data.`;
+  survey.scoreList.innerHTML = Object.entries(recommendation.scores)
+    .sort(([, first], [, second]) => second - first)
+    .map(([key, score]) => `<div class="survey-score"><span>${scenarios[key].name}</span><strong>${score} fit points</strong></div>`)
+    .join("");
+  survey.form.hidden = true;
+  survey.result.hidden = false;
+  document.querySelector("#simulator").scrollIntoView({ behavior: "smooth" });
+}
+
+survey.form.addEventListener("change", (event) => {
+  if (event.target.name === "priorities") {
+    const priorities = survey.form.querySelectorAll('input[name="priorities"]:checked');
+    if (priorities.length > 2) {
+      event.target.checked = false;
+      survey.priorityLimit.textContent = "Choose up to two priorities.";
+    } else {
+      survey.priorityLimit.textContent = `${priorities.length} of 2 priorities selected.`;
+    }
+  }
+});
+survey.next.addEventListener("click", () => {
+  if (!validateSurveyStep()) return;
+  if (survey.currentStep === survey.steps.length) showSurveyRecommendation();
+  else showSurveyStep(survey.currentStep + 1);
+});
+survey.back.addEventListener("click", () => showSurveyStep(Math.max(1, survey.currentStep - 1)));
+survey.edit.addEventListener("click", () => {
+  survey.form.hidden = false;
+  survey.result.hidden = true;
+  showSurveyStep(survey.steps.length);
+});
+showSurveyStep(1);
+
 function selectScenario(key) {
   const scenario = scenarios[key];
   if (!scenario) return;
@@ -219,5 +387,5 @@ document.querySelectorAll(".area-option").forEach((button) => {
 
 document.querySelector("#use-area").addEventListener("click", () => {
   areaElements.status.textContent = `${areas[selectedAreaKey].name} is now the focus for the next analysis.`;
-  document.querySelector("#simulator").scrollIntoView({ behavior: "smooth" });
+  document.querySelector("#survey").scrollIntoView({ behavior: "smooth" });
 });
