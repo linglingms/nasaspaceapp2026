@@ -16,6 +16,12 @@ Earth observations alongside local soil information, crop characteristics, and f
 priorities to make rotation tradeoffs easier to explore. Its essential questions are:
 what is changing, what helps under comparable conditions, and what comes next.
 
+The dashboard also includes a Leaflet/OpenStreetMap map with illustrative focus areas
+for the Great Plains, California's Central Valley, and East Africa. Selecting an area
+updates its example crops, terrain, and planning focus; the **Use this area** action
+then carries that context into the decision-support flow. These are placeholders for
+future farm boundaries and NASA-derived layers, not live field measurements.
+
 ## Run locally
 
 Open [index.html](./index.html) in a browser. No build step or package installation is required.

@@ -6,6 +6,11 @@
     <meta name="description" content="TerraCycle AI decision-support prototype" />
     <title>TerraCycle AI | Rotation Scenario Simulator</title>
     <link rel="stylesheet" href="styles.css" />
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      crossorigin=""
+    />
   </head>
   <body>
     <header class="site-header">
@@ -55,8 +60,8 @@
           <a class="button button-primary" href="#simulator">Try the simulator</a>
         </div>
         <div class="hero-stat" aria-label="Current field conditions">
-          <span class="stat-label">Selected field</span>
-          <strong>Field A</strong>
+          <span class="stat-label">Selected area</span>
+          <strong id="selected-area-name">Great Plains, USA</strong>
           <span class="status-pill">Forecast: elevated drought risk</span>
           <div class="stat-grid">
             <div><span>Soil moisture</span><strong>0.15</strong></div>
@@ -89,6 +94,42 @@
             <li><strong>What helps?</strong><span>Which rotation choices are associated with healthier soil and vegetation under comparable conditions?</span></li>
             <li><strong>What comes next?</strong><span>Which options balance water use, growing seasons, disease risk, markets, and farmer priorities?</span></li>
           </ul>
+        </div>
+      </section>
+
+      <section class="section map-section" aria-labelledby="map-title">
+        <div class="section-heading">
+          <p class="eyebrow">Explore a growing region</p>
+          <h2 id="map-title">Select an area to focus the analysis</h2>
+          <p>
+            Choose a placeholder region on the map or from the list. The selected
+            crop and terrain profile will guide the next model inputs.
+          </p>
+        </div>
+        <div class="map-layout">
+          <div class="map-card">
+            <div id="farm-map" aria-label="Interactive map of example farming regions"></div>
+            <p class="map-caption">Illustrative areas only — no farm boundaries or live NASA layers are shown yet.</p>
+          </div>
+          <aside class="area-panel" aria-live="polite">
+            <p class="eyebrow">Selected focus area</p>
+            <h3 id="area-panel-name">Great Plains, USA</h3>
+            <p id="area-panel-description">
+              A dryland grain region used to demonstrate drought-aware rotation planning.
+            </p>
+            <div class="area-facts">
+              <div><span>Example crops</span><strong id="area-crops">Wheat · Corn · Sorghum</strong></div>
+              <div><span>Terrain</span><strong id="area-terrain">Prairie · Rolling plains</strong></div>
+              <div><span>Focus</span><strong id="area-focus">Water conservation</strong></div>
+            </div>
+            <button class="button button-primary area-button" id="use-area" type="button">Use this area</button>
+            <p class="area-selection" id="area-selection-status">Ready to explore this placeholder area.</p>
+            <div class="area-options" role="group" aria-label="Example areas">
+              <button class="area-option active" type="button" data-area="great-plains">Great Plains</button>
+              <button class="area-option" type="button" data-area="central-valley">Central Valley</button>
+              <button class="area-option" type="button" data-area="east-africa">East Africa</button>
+            </div>
+          </aside>
         </div>
       </section>
 
@@ -205,6 +246,10 @@
     <footer class="site-footer">
       <div class="container"><strong>TerraCycle AI</strong><span>Decision support, not automated farm advice.</span></div>
     </footer>
+    <script
+      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+      crossorigin=""
+    ></script>
     <script src="app.js"></script>
   </body>
 </html>
