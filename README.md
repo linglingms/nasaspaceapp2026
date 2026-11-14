@@ -87,6 +87,23 @@ are large. Use a NASADEM/SRTM GeoTIFF covering the selected regions. The generat
 `data/terrain-analysis.geojson` is a derived artifact and should be regenerated when
 the DEM or boundaries change.
 
+To add climate analysis, provide a date range. The script queries NASA POWER at
+each region centroid, adds mean temperature and total precipitation, and fits a
+transparent linear trend baseline for the next year:
+
+```bash
+python3 scripts/terrain_analysis.py \
+  --dem path/to/nasadem.tif \
+  --climate-start 2001-01-01 \
+  --climate-end 2024-12-31
+```
+
+The climate fields are exploratory baselines, not validated forecasts. For a
+production predictive model, use the exported climate fields alongside field
+management, soil, and satellite features in a time-aware training pipeline.
+Only expose predictions when a held-out evaluation set supports them, and display
+uncertainty and sample size next to each estimate.
+
 ### Two analysis engines
 
 - **Causal analysis — Why?** Compares fields with and without a strategy while
