@@ -25,6 +25,8 @@ h1 { max-width: 650px; margin-bottom: 18px; font-size: clamp(2.5rem, 6vw, 4.7rem
 h2 { margin-bottom: 12px; font-size: clamp(1.7rem, 3vw, 2.45rem); letter-spacing: -.035em; }
 h3 { margin-bottom: 8px; font-size: 1.2rem; }
 .hero-copy { max-width: 580px; margin-bottom: 28px; color: var(--muted); font-size: 1.12rem; }
+.challenge-context { max-width: 670px; margin-bottom: 14px; color: var(--muted); font-size: .92rem; }
+.challenge-context + .hero-copy { margin-top: 24px; }
 .button { display: inline-block; padding: 12px 18px; border-radius: 8px; font-weight: 700; text-decoration: none; }
 .button-primary { color: white; background: var(--green); }
 .hero-stat, .analysis-card, .simulator { border: 1px solid var(--line); border-radius: 16px; background: white; box-shadow: 0 12px 32px rgb(23 53 43 / 6%); }
