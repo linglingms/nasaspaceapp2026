@@ -108,6 +108,11 @@ The simulator compares three illustrative strategies:
 It displays estimated soil moisture, vegetation health, drought resilience, and a
 confidence label. All values are explicitly illustrative placeholders.
 
+The page also explains how each method works in practice: the conventional sequence,
+cover-crop timing and termination, and the species-selection and management tradeoffs
+of an alternative cover-crop mix. These explanations are educational context, not
+prescriptions for a particular farm.
+
 ## Technology
 
 - HTML, CSS, and vanilla JavaScript
