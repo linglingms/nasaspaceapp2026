@@ -94,6 +94,12 @@ the DEM or boundaries change.
 - **Predictive analysis — What next?** Uses historical environmental patterns to
   forecast future soil moisture and vegetation conditions.
 
+The page also includes an empty chart and schema scaffold for future integration.
+The planned data model includes field identifiers, observation dates, soil moisture,
+rainfall, rotation method, vegetation index, elevation, slope, soil type, crop stage,
+irrigation, and uncertainty. The blank chart is intentionally not presented as a
+real forecast until validated NASA and local field data are connected.
+
 The interface keeps methods such as causal inference, causal forests, Random Forest,
 and XGBoost in the background so the primary user flow remains understandable.
 

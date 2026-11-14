@@ -187,24 +187,91 @@
           <div class="card-icon">WHY</div>
           <h3>Causal analysis</h3>
           <p class="question">Did cover crops improve the outcome?</p>
+          <p>
+            Causal analysis estimates what probably changed because of a rotation
+            choice, rather than simply showing that two fields were different.
+          </p>
           <ol>
-            <li>Compare fields with and without cover crops.</li>
-            <li>Account for rainfall, soil, temperature, and management.</li>
-            <li>Estimate the likely effect of the strategy.</li>
+            <li>Define the treatment: cover crop used or not used.</li>
+            <li>Match comparable fields using rainfall, soil, temperature, terrain, and management.</li>
+            <li>Compare the observed outcome and report the estimated effect with uncertainty.</li>
           </ol>
+          <p class="analysis-note"><strong>Example question:</strong> For fields with similar drought exposure, did adding a cover crop increase end-of-season soil moisture?</p>
           <div class="result"><span>Illustrative result</span><strong>+0.03 soil moisture</strong></div>
         </article>
         <article class="analysis-card predictive-card">
           <div class="card-icon">NEXT</div>
           <h3>Predictive analysis</h3>
           <p class="question">What conditions should we expect next season?</p>
+          <p>
+            Predictive analysis learns patterns from past observations to estimate
+            future conditions. It forecasts risk; it does not prove that a strategy
+            caused an outcome.
+          </p>
           <ol>
-            <li>Learn from historical rainfall and temperature.</li>
-            <li>Use previous soil moisture and vegetation patterns.</li>
-            <li>Forecast conditions and evaluate accuracy.</li>
+            <li>Build a time series from rainfall, temperature, soil moisture, and vegetation.</li>
+            <li>Use recent conditions and seasonal patterns as model features.</li>
+            <li>Generate a forecast, confidence interval, and accuracy score on held-out seasons.</li>
           </ol>
+          <p class="analysis-note"><strong>Example question:</strong> Given the next season's expected rainfall and current moisture, how likely is elevated vegetation stress?</p>
           <div class="result"><span>Illustrative forecast</span><strong>Elevated stress risk</strong></div>
         </article>
+      </section>
+
+      <section class="section data-scaffold" aria-labelledby="data-scaffold-title">
+        <div class="section-heading">
+          <p class="eyebrow">Ready for live data</p>
+          <h2 id="data-scaffold-title">Analysis data model</h2>
+          <p>
+            This interface is a structured placeholder for future NASA Earth
+            observations, field records, and validated model outputs.
+          </p>
+        </div>
+        <div class="data-layout">
+          <article class="data-card">
+            <div class="data-card-header">
+              <div><span class="stat-label">Chart scaffold</span><h3>Seasonal field conditions</h3></div>
+              <span class="data-status">No data loaded</span>
+            </div>
+            <div class="chart-placeholder" role="img" aria-label="Empty chart awaiting seasonal NASA and field data">
+              <span class="chart-y-label">Value</span>
+              <div class="chart-area">
+                <div class="chart-gridline"></div>
+                <div class="chart-gridline"></div>
+                <div class="chart-gridline"></div>
+                <div class="chart-gridline"></div>
+                <span class="chart-empty-message">NASA and field observations will appear here</span>
+                <div class="chart-x-labels"><span>Pre-season</span><span>Planting</span><span>Mid-season</span><span>Harvest</span></div>
+              </div>
+              <span class="chart-x-label">Season / date</span>
+            </div>
+            <div class="chart-legend">
+              <span><i class="legend-dot moisture"></i>Soil moisture</span>
+              <span><i class="legend-dot rainfall"></i>Rainfall</span>
+              <span><i class="legend-dot vegetation"></i>Vegetation index</span>
+            </div>
+          </article>
+          <article class="data-card">
+            <div class="data-card-header">
+              <div><span class="stat-label">Schema scaffold</span><h3>Required model fields</h3></div>
+              <span class="data-status">Awaiting source</span>
+            </div>
+            <div class="data-table-wrap">
+              <table class="data-table">
+                <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
+                <tbody>
+                  <tr><td>field_id</td><td>Text</td><td>Stable field identifier</td></tr>
+                  <tr><td>observation_date</td><td>Date</td><td>NASA or farm observation time</td></tr>
+                  <tr><td>soil_moisture</td><td>Decimal</td><td>Outcome for causal analysis</td></tr>
+                  <tr><td>rainfall_mm</td><td>Decimal</td><td>Weather exposure</td></tr>
+                  <tr><td>rotation_method</td><td>Category</td><td>Strategy or treatment</td></tr>
+                  <tr><td>vegetation_index</td><td>Decimal</td><td>Crop stress signal</td></tr>
+                </tbody>
+              </table>
+            </div>
+            <p class="data-footnote">Additional fields will include elevation, slope, soil type, crop stage, irrigation, and uncertainty.</p>
+          </article>
+        </div>
       </section>
 
       <section class="section rotation-methods" aria-labelledby="rotation-methods-title">
