@@ -312,6 +312,16 @@ const analyticsElements = {
   featureChart: document.querySelector("#feature-importance-chart"),
 };
 
+const commodityElements = {
+  filter: document.querySelector("#commodity-filter"),
+  status: document.querySelector("#commodity-data-status"),
+  recordsChart: document.querySelector("#commodity-records-chart"),
+  priceChart: document.querySelector("#commodity-price-chart"),
+  classificationMetrics: document.querySelector("#commodity-classification-metrics"),
+  priceMetrics: document.querySelector("#commodity-price-metrics"),
+  summaryBody: document.querySelector("#commodity-summary-body"),
+};
+
 const chartViews = {
   "monthly-temperature": {
     title: "Monthly temperature",
@@ -423,6 +433,74 @@ function renderStaticModelCharts(data) {
   };
   renderInto(analyticsElements.zonesChart, data.zones, "mean_stress_risk", "Environmental zones", "score", "zone");
   renderInto(analyticsElements.featureChart, data.feature_importance, "importance", "Random Forest feature importance", "importance", "feature");
+}
+
+function renderCommodityBars(target, items, valueKey, title, unit) {
+  if (!items.length) {
+    target.innerHTML = '<p class="chart-empty-message">No grouped values available for this filter.</p>';
+    return;
+  }
+  const width = 720;
+  const height = 270;
+  const max = Math.max(...items.map((item) => Number(item[valueKey])), 1);
+  const barWidth = (width - 100) / items.length - 18;
+  const bars = items.map((item, index) => {
+    const value = Number(item[valueKey]);
+    const barHeight = (value / max) * 185;
+    const x = 56 + index * ((width - 100) / items.length);
+    const y = 210 - barHeight;
+    return `<g><rect class="chart-bar" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4"><title>${item.commodity}: ${formatChartValue(value)} ${unit}</title></rect><text x="${x + barWidth / 2}" y="229" text-anchor="middle">${item.commodity}</text><text class="chart-bar-value" x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle">${formatChartValue(value)}</text></g>`;
+  }).join("");
+  target.innerHTML = `<svg class="analytics-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}"><line class="axis-line" x1="45" y1="210" x2="${width - 24}" y2="210"></line>${bars}</svg>`;
+}
+
+function renderCommodityAnalytics(data, selected = commodityElements.filter.value) {
+  const isAll = selected === "all";
+  const records = isAll
+    ? data.commodity_summary
+    : data.commodity_summary.filter((item) => item.commodity === selected);
+  const prices = isAll
+    ? data.price_summary
+    : data.price_summary.filter((item) => item.commodity === selected);
+  commodityElements.status.textContent = `${data.metadata.record_count.toLocaleString()} records · ${data.metadata.commodity_count} commodities`;
+  renderCommodityBars(commodityElements.recordsChart, records.slice(0, 12), "records", "Commodity records", "records");
+  renderCommodityBars(commodityElements.priceChart, prices.slice(0, 12), "mean_price", "Mean price by commodity", "value");
+  commodityElements.classificationMetrics.innerHTML = `
+    <span><strong>${(data.classification.accuracy * 100).toFixed(1)}%</strong><small>Accuracy</small></span>
+    <span><strong>${data.classification.classes}</strong><small>Classes</small></span>
+    <span><strong>${data.classification.test_records.toLocaleString()}</strong><small>Test records</small></span>`;
+  commodityElements.priceMetrics.innerHTML = `
+    <span><strong>${data.price_model.mae.toFixed(2)}</strong><small>MAE</small></span>
+    <span><strong>${data.price_model.rmse.toFixed(2)}</strong><small>RMSE</small></span>
+    <span><strong>${data.price_model.r2.toFixed(2)}</strong><small>R²</small></span>`;
+  const priceByCommodity = new Map(data.price_summary.map((item) => [item.commodity, item]));
+  commodityElements.summaryBody.innerHTML = records.map((item) => {
+    const price = priceByCommodity.get(item.commodity);
+    return `<tr><td>${item.commodity}</td><td>${item.records.toLocaleString()}</td><td>${item.mean_value.toFixed(2)}</td><td>${item.median_value.toFixed(2)}</td><td>${price?.price_records.toLocaleString() || "—"}</td><td>${price ? price.mean_price.toFixed(2) : "—"}</td></tr>`;
+  }).join("") || '<tr><td colspan="6">No grouped values available for this filter.</td></tr>';
+}
+
+function loadCommodityAnalytics() {
+  fetch("data/commodities-analytics.json")
+    .then((response) => {
+      if (!response.ok) throw new Error(`Commodities analytics request failed: ${response.status}`);
+      return response.json();
+    })
+    .then((data) => {
+      data.commodity_summary.forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.commodity;
+        option.textContent = item.commodity;
+        commodityElements.filter.append(option);
+      });
+      renderCommodityAnalytics(data, "all");
+      commodityElements.filter.addEventListener("change", (event) => renderCommodityAnalytics(data, event.target.value));
+    })
+    .catch((error) => {
+      commodityElements.status.textContent = "Commodities data load failed";
+      commodityElements.summaryBody.innerHTML = `<tr><td colspan="6">${error.message}</td></tr>`;
+      console.error("Commodities analytics could not be loaded.", error);
+    });
 }
 
 function renderAnalyticsChart(viewKey = analyticsElements.chartSelector.value) {
@@ -620,6 +698,7 @@ document.querySelectorAll(".area-option").forEach((button) => {
 });
 
 selectArea("eastern-washington", false);
+loadCommodityAnalytics();
 
 document.querySelector("#use-area").addEventListener("click", () => {
   areaElements.status.textContent = `${areas[selectedAreaKey].name} is now the focus for the next analysis.`;

@@ -319,6 +319,74 @@
         </div>
       </section>
 
+      <section class="section commodity-analytics" aria-labelledby="commodity-analytics-title">
+        <div class="section-heading">
+          <p class="eyebrow">Market context</p>
+          <h2 id="commodity-analytics-title">Commodities dataset analytics</h2>
+          <p>
+            Filter and compare Washington commodity records, then review the
+            exploratory classification and price-prediction baselines.
+          </p>
+        </div>
+        <div class="commodity-toolbar">
+          <label for="commodity-filter">Filter by commodity</label>
+          <select id="commodity-filter" class="chart-selector">
+            <option value="all">All commodities</option>
+          </select>
+          <span class="data-status" id="commodity-data-status">Loading commodities dataset…</span>
+        </div>
+        <div class="commodity-grid">
+          <article class="data-card">
+            <span class="stat-label">Grouped records</span>
+            <h3>Records by commodity</h3>
+            <p class="chart-explanation">Counts show how many observations are available for each commodity category.</p>
+            <div id="commodity-records-chart" class="analytics-chart" role="img" aria-label="Records grouped by commodity"></div>
+          </article>
+          <article class="data-card">
+            <span class="stat-label">Price-received subset</span>
+            <h3>Mean price values</h3>
+            <p class="chart-explanation">These values are comparable only within the same Data Item unit.</p>
+            <div id="commodity-price-chart" class="analytics-chart" role="img" aria-label="Mean price values grouped by commodity"></div>
+          </article>
+        </div>
+        <div class="commodity-detail-grid">
+          <article class="data-card">
+            <span class="stat-label">Classification baseline</span>
+            <h3>Commodity label prediction</h3>
+            <div id="commodity-classification-metrics" class="diagnostic-values"></div>
+            <p class="chart-explanation">TF-IDF plus Logistic Regression predicts the commodity label from structured text fields. This is a data-label test, not an agronomic model.</p>
+          </article>
+          <article class="data-card">
+            <span class="stat-label">Predictive baseline</span>
+            <h3>Price prediction</h3>
+            <div id="commodity-price-metrics" class="diagnostic-values"></div>
+            <p class="chart-explanation">Random Forest Regression predicts numeric price values from commodity, time, and survey metadata. It is not a guaranteed market forecast.</p>
+          </article>
+          <article class="data-card commodity-variables-card">
+            <span class="stat-label">How to read the data</span>
+            <h3>Variable meanings</h3>
+            <dl class="variable-glossary">
+              <div><dt>Commodity</dt><dd>Agricultural category being measured.</dd></div>
+              <div><dt>Data Item</dt><dd>Specific measure, such as price received or production.</dd></div>
+              <div><dt>Value</dt><dd>Numeric observation in the unit described by Data Item.</dd></div>
+              <div><dt>Period / Year</dt><dd>Reporting time for the observation.</dd></div>
+              <div><dt>CV (%)</dt><dd>Coefficient of variation when supplied.</dd></div>
+            </dl>
+          </article>
+        </div>
+        <div class="data-card commodity-table-card">
+          <div class="data-card-header">
+            <div><span class="stat-label">Grouped results</span><h3>Commodity summary table</h3></div>
+          </div>
+          <div class="data-table-wrap">
+            <table class="data-table">
+              <thead><tr><th>Commodity</th><th>Records</th><th>Mean value</th><th>Median value</th><th>Price records</th><th>Mean price</th></tr></thead>
+              <tbody id="commodity-summary-body"><tr><td colspan="6">Loading commodities dataset…</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
       <section class="section rotation-methods" aria-labelledby="rotation-methods-title">
         <div class="section-heading">
           <p class="eyebrow">From practice to outcome</p>
