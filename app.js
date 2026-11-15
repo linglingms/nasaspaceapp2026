@@ -924,6 +924,89 @@ function selectArea(key, moveMap = true) {
   }
 }
 
+// Geographic context around the study area: neighbouring states, southern Canada,
+// western Washington counties and reference cities. Drawn as vectors so the map
+// reads even before (or without) basemap tiles.
+const contextPlaceLabels = [
+  { name: "British Columbia", latlng: [49.75, -119.2], kind: "region" },
+  { name: "Oregon", latlng: [44.75, -120.3], kind: "region" },
+  { name: "Idaho", latlng: [45.2, -115.3], kind: "region" },
+  { name: "Montana", latlng: [47.1, -112.4], kind: "region" },
+  { name: "Western Washington", latlng: [47.35, -123.15], kind: "region" },
+  { name: "Pacific Ocean", latlng: [46.6, -125.4], kind: "water" },
+];
+
+const contextCities = [
+  { name: "Spokane", latlng: [47.658, -117.426], side: "left" },
+  { name: "Yakima", minor: true, latlng: [46.602, -120.506] },
+  { name: "Tri-Cities", latlng: [46.211, -119.137] },
+  { name: "Wenatchee", minor: true, latlng: [47.423, -120.31] },
+  { name: "Moses Lake", minor: true, latlng: [47.13, -119.278] },
+  { name: "Walla Walla", minor: true, latlng: [46.065, -118.343] },
+  { name: "Ellensburg", minor: true, latlng: [46.997, -120.548], side: "left" },
+  { name: "Seattle", latlng: [47.606, -122.332] },
+  { name: "Portland", latlng: [45.515, -122.679] },
+  { name: "Boise", latlng: [43.615, -116.202] },
+  { name: "Missoula", latlng: [46.872, -113.994] },
+];
+
+function addRegionContext(map, contextData, { placeLabels, minorCityZoom }) {
+  map.createPane("context");
+  map.getPane("context").style.zIndex = 350;
+  map.getPane("context").style.pointerEvents = "none";
+  L.geoJSON(contextData, {
+    pane: "context",
+    interactive: false,
+    style: (feature) => {
+      const kind = feature.properties.kind;
+      if (kind === "wa-county-lines") return { color: "#6f8a7b", weight: 0.7, opacity: 0.5 };
+      if (feature.properties.name === "Washington")
+        return { color: "#3f6a55", weight: 1.6, opacity: 0.8, fillColor: "#ffffff", fillOpacity: 0.35 };
+      return { color: "#7f9488", weight: 1.1, opacity: 0.75, fillColor: "#e9e4d8", fillOpacity: 0.4 };
+    },
+  }).addTo(map);
+
+  const cityMarker = (city) =>
+    L.marker(city.latlng, {
+      interactive: false,
+      keyboard: false,
+      icon: L.divIcon({
+        className: `city-label${city.side === "left" ? " city-label-left" : ""}`,
+        html: `<i></i><span>${city.name}</span>`,
+        iconSize: [0, 0],
+      }),
+    });
+  L.layerGroup(contextCities.filter((city) => !city.minor).map(cityMarker)).addTo(map);
+  // Smaller towns sit inside the county-labelled area, so they appear once zoomed in.
+  const minorCities = L.layerGroup(contextCities.filter((city) => city.minor).map(cityMarker));
+  const updateMinorCities = () => {
+    if (map.getZoom() >= minorCityZoom) minorCities.addTo(map);
+    else minorCities.remove();
+  };
+  map.on("zoomend", updateMinorCities);
+  updateMinorCities();
+  if (placeLabels) {
+    contextPlaceLabels.forEach((place) =>
+      L.marker(place.latlng, {
+        interactive: false,
+        keyboard: false,
+        icon: L.divIcon({ className: `place-label place-label-${place.kind}`, html: `<span>${place.name}</span>`, iconSize: [0, 0] }),
+      }).addTo(map),
+    );
+  }
+}
+
+fetch("data/region-context.geojson")
+  .then((response) => {
+    if (!response.ok) throw new Error(`Context request failed: ${response.status}`);
+    return response.json();
+  })
+  .then((contextData) => {
+    addRegionContext(farmMap, contextData, { placeLabels: true, minorCityZoom: 7 });
+    addRegionContext(surveyMap, contextData, { placeLabels: false, minorCityZoom: 0 });
+  })
+  .catch((error) => console.info("Map context layer unavailable.", error));
+
 // Area-weighted centroid of a feature's largest outer ring, as [lat, lng].
 function polygonLabelPoint(geometry) {
   const polygons = geometry.type === "MultiPolygon" ? geometry.coordinates : [geometry.coordinates];

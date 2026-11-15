@@ -378,3 +378,9 @@ input::placeholder { color: var(--muted); opacity: 1; }
 }
 .county-label { pointer-events: none; }
 .county-label span { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; color: #17352b; font-size: .68rem; font-weight: 700; letter-spacing: .02em; opacity: .8; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff; }
+.city-label, .place-label { pointer-events: none; }
+.city-label i { position: absolute; left: -3px; top: -3px; width: 6px; height: 6px; border: 1.5px solid #fff; border-radius: 50%; background: #34433b; box-shadow: 0 0 0 1px rgb(52 67 59 / 25%); }
+.city-label span { position: absolute; left: 6px; top: -8px; white-space: nowrap; color: #34433b; font-size: .66rem; font-weight: 600; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff; }
+.city-label-left span { left: auto; right: 6px; }
+.place-label span { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; color: #6b7c72; font-size: .8rem; font-weight: 600; letter-spacing: .04em; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
+.place-label-water span { color: #5d87a3; font-style: italic; font-weight: 500; }
