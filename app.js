@@ -78,10 +78,12 @@ const survey = {
   edit: document.querySelector("#survey-edit"),
   priorityLimit: document.querySelector("#priority-limit"),
   locationStatus: document.querySelector("#survey-location-status"),
+  climateContext: document.querySelector("#survey-climate-context"),
   latitude: document.querySelector("#farm-latitude"),
   longitude: document.querySelector("#farm-longitude"),
   currentStep: 1,
 };
+let surveyMap = null;
 
 function checkedValues(name) {
   return [...survey.form.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
@@ -115,6 +117,7 @@ function showSurveyStep(step) {
   survey.progressBar.style.width = `${(step / survey.steps.length) * 100}%`;
   survey.back.disabled = step === 1;
   survey.next.textContent = step === survey.steps.length ? "See recommendation" : "Next question";
+  if (step === 1 && surveyMap) window.setTimeout(() => surveyMap.invalidateSize(), 50);
 }
 
 function validateSurveyStep() {
@@ -140,6 +143,18 @@ function calculateRecommendation(answers) {
   const reasons = [];
   const priorities = new Set(answers.priorities);
   const constraints = new Set(answers.constraints);
+  const climateRisk = Number(powerData?.stress_risk_summary?.mean ?? 0.234);
+  let climateAdjustment = 0;
+  if (climateRisk >= 0.25) {
+    scores.alternative += 1;
+    scores["cover-crops"] += 1;
+    climateAdjustment = 1;
+    reasons.push("the current climate proxy is moderately elevated, so lower-water and soil-cover options receive a climate adjustment");
+  } else if (climateRisk < 0.15) {
+    scores.conventional += 1;
+    climateAdjustment = 1;
+    reasons.push("the current climate proxy is lower, so the baseline option receives a climate adjustment");
+  }
 
   if (answers.water === "rainfed") {
     scores.alternative += 3;
@@ -190,7 +205,10 @@ function calculateRecommendation(answers) {
   }
 
   const ranked = Object.entries(scores).sort(([, first], [, second]) => second - first);
-  return { key: ranked[0][0], scores, reasons };
+  const nearest = answers.latitude && answers.longitude
+    ? nearestPowerPoint(answers.latitude, answers.longitude)?.point
+    : null;
+  return { key: ranked[0][0], scores, reasons, climateAdjustment, nearestPoint: nearest };
 }
 
 function showSurveyRecommendation() {
@@ -200,6 +218,12 @@ function showSurveyRecommendation() {
   selectScenario(recommendation.key);
   survey.resultTitle.textContent = scenario.name;
   survey.resultReason.textContent = `Based on your answers, ${recommendation.reasons.join(", ")}. This is an exploratory recommendation using the simulator's illustrative strategy data.`;
+  const climateRisk = Number(powerData?.stress_risk_summary?.mean ?? 0.234);
+  const riskBand = climateRisk >= 0.33 ? "higher" : climateRisk >= 0.15 ? "moderate" : "lower";
+  const nearest = recommendation.nearestPoint;
+  survey.climateContext.textContent = nearest
+    ? `Climate calculation: the selected marker is nearest to ${nearest.lat}°N, ${nearest.lon}°W. The regional mean stress-risk proxy is ${climateRisk.toFixed(3)} (${riskBand} band), which contributed ${recommendation.climateAdjustment > 0 ? `+${recommendation.climateAdjustment}` : recommendation.climateAdjustment} climate-fit points to the recommendation.`
+    : `Climate calculation: the regional mean stress-risk proxy is ${climateRisk.toFixed(3)} (${riskBand} band).`;
   survey.scoreList.innerHTML = Object.entries(recommendation.scores)
     .sort(([, first], [, second]) => second - first)
     .map(([key, score]) => `<div class="survey-score"><span>${scenarios[key].name}</span><strong>${score} fit points</strong></div>`)
@@ -303,13 +327,6 @@ const farmMap = L.map("farm-map", { scrollWheelZoom: false }).setView(
   areas[selectedAreaKey].coordinates,
   areas[selectedAreaKey].zoom,
 );
-farmMap.setMaxBounds(easternWashingtonBounds);
-L.rectangle(easternWashingtonBounds, {
-  color: "#12543a",
-  weight: 2,
-  dashArray: "6 6",
-  fill: false,
-}).addTo(farmMap).bindTooltip("Eastern Washington survey boundary");
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -317,6 +334,21 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(farmMap);
 
 powerPointsLayer = L.layerGroup().addTo(farmMap);
+
+surveyMap = L.map("survey-map", { scrollWheelZoom: false }).fitBounds(easternWashingtonBounds);
+surveyMap.setMaxBounds(easternWashingtonBounds);
+L.rectangle(easternWashingtonBounds, {
+  color: "#12543a",
+  weight: 2,
+  dashArray: "6 6",
+  fillColor: "#69b88b",
+  fillOpacity: 0.08,
+}).addTo(surveyMap).bindTooltip("Eastern Washington survey boundary");
+L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+  maxZoom: 18,
+}).addTo(surveyMap);
+const surveyPointsLayer = L.layerGroup().addTo(surveyMap);
 
 function nearestPowerPoint(latitude, longitude) {
   if (!powerData?.points?.length) return null;
@@ -330,7 +362,7 @@ function setSurveyLocation(latitude, longitude) {
   survey.latitude.value = latitude.toFixed(5);
   survey.longitude.value = longitude.toFixed(5);
   if (!surveyLocationMarker) {
-    surveyLocationMarker = L.marker([latitude, longitude], { draggable: true }).addTo(farmMap);
+    surveyLocationMarker = L.marker([latitude, longitude], { draggable: true }).addTo(surveyMap);
     surveyLocationMarker.on("dragend", (event) => {
       const position = event.target.getLatLng();
       if (easternWashingtonBounds.contains(position)) setSurveyLocation(position.lat, position.lng);
@@ -354,7 +386,7 @@ function handleSurveyMapClick(event) {
   setSurveyLocation(event.latlng.lat, event.latlng.lng);
 }
 
-farmMap.on("click", handleSurveyMapClick);
+surveyMap.on("click", handleSurveyMapClick);
 
 const analyticsElements = {
   chart: document.querySelector("#analytics-chart"),
@@ -691,6 +723,15 @@ function loadPowerData() {
           `<strong>NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}<br>${point.date_start} to ${point.date_end}`,
         );
         marker.addTo(powerPointsLayer);
+        L.circleMarker([point.lat, point.lon], {
+          color: "#12543a",
+          fillColor: "#f1b84b",
+          fillOpacity: 0.9,
+          radius: 7,
+          weight: 2,
+        }).bindPopup(
+          `<strong>Nearest NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}`,
+        ).addTo(surveyPointsLayer);
         bounds.push([point.lat, point.lon]);
       });
       if (bounds.length) farmMap.fitBounds(bounds, { padding: [35, 35] });
