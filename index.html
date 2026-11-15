@@ -72,7 +72,11 @@
         <div class="map-layout">
           <div class="map-card">
             <div id="farm-map" aria-label="Interactive map of example farming regions"></div>
-            <p class="map-caption">NASA POWER sample points appear when the Eastern Washington dataset is selected.</p>
+            <div class="map-legend">
+              <span><i class="legend-region"></i>Eastern Washington counties</span>
+              <span data-power-legend hidden><i class="legend-coverage"></i>NASA POWER weather grid</span>
+            </div>
+            <p class="map-caption" data-power-legend hidden>Blue cells show approximate 0.5° × 0.625° weather-grid footprints for the four loaded samples.</p>
           </div>
           <aside class="area-panel" aria-live="polite">
             <h3 id="area-panel-name">Eastern Washington data</h3>
@@ -114,7 +118,7 @@
               <legend>Where is your farm?</legend>
               <p class="survey-help">Place a marker inside the Eastern Washington survey area. We will associate it with the nearest climate-data point. An address or county is optional context.</p>
               <div id="survey-map" class="survey-map" aria-label="Farm location map for Eastern Washington"></div>
-              <p class="map-caption">The shaded boundary limits the survey marker to Eastern Washington. The yellow points are NASA POWER observations.</p>
+              <p class="map-caption">Click inside the dashed boundary to place your farm.<span data-power-legend hidden> Blue cells show the samples’ approximate weather-grid footprints.</span></p>
               <p id="survey-location-status" class="survey-feedback" aria-live="polite">No farm point selected yet.</p>
               <label for="farm-location">Address or county (optional)</label>
               <input id="farm-location" name="location" type="text" placeholder="Example: Whitman County, WA" />
@@ -529,13 +533,6 @@
             <li>Compare the observed outcome and report the estimated effect with uncertainty.</li>
           </ol>
           <p class="analysis-note"><strong>Example question:</strong> For fields with similar drought exposure, did adding a cover crop increase end-of-season soil moisture?</p>
-          <div class="result analysis-result">
-            <span id="causal-result-label">Causal estimate status</span>
-            <strong id="causal-result">Not estimable from the current datasets</strong>
-          </div>
-          <p class="analysis-data-note" id="causal-data-status">
-            The survey captures rotation intent, while the NASA POWER and commodities files contain weather and market observations. A defensible cover-crop effect still needs field-level treatment, comparison, and measured soil-moisture outcomes.
-          </p>
         </article>
         <article class="analysis-card predictive-card">
           <h3>Predictive analysis</h3>

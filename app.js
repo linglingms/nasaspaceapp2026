@@ -278,6 +278,7 @@ function showSurveyRecommendation() {
   const answers = readSurveyAnswers();
   const recommendation = calculateRecommendation(answers);
   updateScenarioMetrics(answers, recommendation);
+  if (activeScmCell) applyScmCellToSimulator(activeScmCell);
   const scenario = scenarios[recommendation.key];
   selectScenario(recommendation.key);
   survey.resultTitle.textContent = scenario.name;
@@ -313,9 +314,12 @@ function resetSurvey() {
   survey.form.hidden = false;
   Object.entries(defaultScenarios).forEach(([key, scenario]) => {
     Object.assign(scenarios[key], scenario);
+    delete scenarios[key].metricLabels;
   });
   activeRecommendationKey = null;
+  activeScmCell = null;
   selectScenario("conventional");
+  if (analyticsElements.chartSelector.value === "scm-cf-trajectory") renderScmChart();
   showSurveyStep(1);
   if (surveyMap) {
     surveyMap.invalidateSize();
@@ -375,10 +379,21 @@ function selectScenario(key) {
   elements.explanation.textContent = scenario.explanation;
   elements.assumptions.textContent = scenario.assumptions;
   elements.confidence.textContent = scenario.confidence;
+  const metricLabels = scenario.metricLabels || {
+    health: "Vegetation health",
+    resilience: "Drought resilience",
+    waterDemand: "Water demand",
+    soilEffect: "Soil effect",
+    confidence: "Confidence",
+  };
+  Object.entries(metricLabels).forEach(([key, label]) => {
+    elements[key].previousElementSibling.textContent = label;
+  });
 
   document.querySelectorAll(".strategy").forEach((button) => {
     button.classList.toggle("active", button.dataset.strategy === key);
     button.setAttribute("aria-pressed", button.dataset.strategy === key);
+    button.querySelector("span").textContent = scenarios[button.dataset.strategy].name;
     const value = scenarios[button.dataset.strategy]?.moisture;
     if (value !== undefined) button.querySelector(".strategy-value").textContent = value.toFixed(2);
   });
@@ -394,7 +409,7 @@ const areas = {
   "eastern-washington": {
     name: "Eastern Washington data",
     description:
-      "NASA POWER sample data covering Eastern Washington from 45.5–48.5°N and 122.5–117.5°W.",
+      "Four NASA POWER samples from 45.5–48.5°N along 117.5°W provide the project's regional climate context.",
     crops: "Wheat analysis dataset",
     terrain: "Dataset points · Coordinates loaded from NASA POWER export",
     focus: "Climate analytics",
@@ -422,32 +437,103 @@ const terrainLayers = {};
 let powerData = null;
 let commodityData = null;
 let powerPointsLayer;
+let regionBounds = null;
+let powerCoverageBounds = null;
 const farmMap = L.map("farm-map", { scrollWheelZoom: false }).setView(
   areas[selectedAreaKey].coordinates,
   areas[selectedAreaKey].zoom,
 );
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 18,
-}).addTo(farmMap);
+function fitOverview(animate = false) {
+  const bounds = L.latLngBounds([]);
+  if (regionBounds) bounds.extend(regionBounds);
+  if (powerCoverageBounds) bounds.extend(powerCoverageBounds);
+  if (!bounds.isValid()) return;
+  farmMap[animate ? "flyToBounds" : "fitBounds"](bounds, {
+    paddingTopLeft: [24, 64],
+    paddingBottomRight: [24, 64],
+    duration: 0.7,
+  });
+}
+farmMap.on("resize", () => fitOverview());
 
-powerPointsLayer = L.layerGroup().addTo(farmMap);
+// Original OpenStreetMap basemap, with terrain and satellite alternatives.
+function createBasemaps() {
+  return {
+    Map: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18,
+    }),
+    Terrain: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}", {
+      attribution:
+        'Tiles &copy; Esri, USGS, SRTM',
+      maxNativeZoom: 13,
+      maxZoom: 17,
+    }),
+    Satellite: L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics",
+        maxZoom: 18,
+      },
+    ),
+  };
+}
+
+function addBasemaps(map, coverageLayer) {
+  const basemaps = createBasemaps();
+  basemaps.Map.addTo(map);
+  const control = L.control.layers(basemaps, { "NASA POWER": coverageLayer }, { position: "topright", collapsed: false }).addTo(map);
+  map.on("overlayadd overlayremove", (event) => {
+    if (event.layer !== coverageLayer) return;
+    map.getContainer().parentElement.querySelectorAll("[data-power-legend]").forEach((element) => {
+      element.hidden = !map.hasLayer(coverageLayer);
+    });
+  });
+  map.createPane("powerCoverage");
+  map.getPane("powerCoverage").style.zIndex = 450;
+  return control;
+}
+
+powerPointsLayer = L.layerGroup();
+const farmLayerControl = addBasemaps(farmMap, powerPointsLayer);
+L.control.scale({ imperial: true, metric: true, position: "bottomleft" }).addTo(farmMap);
 
 surveyMap = L.map("survey-map", { scrollWheelZoom: false }).fitBounds(easternWashingtonBounds);
 surveyMap.setMaxBounds(easternWashingtonBounds);
+const surveyPointsLayer = L.layerGroup();
+addBasemaps(surveyMap, surveyPointsLayer);
+// Dim everything outside the survey boundary so the allowed area reads at a glance.
+L.polygon(
+  [
+    [[85, -180], [85, 180], [-85, 180], [-85, -180]],
+    [
+      easternWashingtonBounds.getNorthWest(),
+      easternWashingtonBounds.getNorthEast(),
+      easternWashingtonBounds.getSouthEast(),
+      easternWashingtonBounds.getSouthWest(),
+    ],
+  ],
+  { stroke: false, fillColor: "#17352b", fillOpacity: 0.32, interactive: false },
+).addTo(surveyMap);
 L.rectangle(easternWashingtonBounds, {
   color: "#12543a",
   weight: 2,
   dashArray: "6 6",
-  fillColor: "#69b88b",
-  fillOpacity: 0.08,
-}).addTo(surveyMap).bindTooltip("Eastern Washington survey boundary");
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 18,
-}).addTo(surveyMap);
-const surveyPointsLayer = L.layerGroup().addTo(surveyMap);
+  fill: false,
+}).addTo(surveyMap).bindTooltip("Eastern Washington survey boundary", { className: "map-tooltip", sticky: true });
+
+const farmMarkerIcon = L.divIcon({
+  className: "farm-marker",
+  html: '<svg viewBox="0 0 32 42" aria-hidden="true"><path d="M16 1C7.7 1 1 7.6 1 15.8 1 27 16 41 16 41s15-14 15-25.2C31 7.6 24.3 1 16 1z"/><circle cx="16" cy="15.5" r="5.5"/></svg>',
+  iconSize: [32, 42],
+  iconAnchor: [16, 41],
+  popupAnchor: [0, -36],
+});
+
+function powerPointLabel(point) {
+  return `${point.lat.toFixed(1)}°N ${Math.abs(point.lon).toFixed(1)}°W`;
+}
 
 function nearestPowerPoint(latitude, longitude) {
   if (!powerData?.points?.length) return null;
@@ -461,11 +547,11 @@ function setSurveyLocation(latitude, longitude) {
   survey.latitude.value = latitude.toFixed(5);
   survey.longitude.value = longitude.toFixed(5);
   if (!surveyLocationMarker) {
-    surveyLocationMarker = L.marker([latitude, longitude], { draggable: true }).addTo(surveyMap);
+    surveyLocationMarker = L.marker([latitude, longitude], { draggable: true, icon: farmMarkerIcon, title: "Your farm" }).addTo(surveyMap);
     surveyLocationMarker.on("dragend", (event) => {
       const position = event.target.getLatLng();
       if (easternWashingtonBounds.contains(position)) setSurveyLocation(position.lat, position.lng);
-      else surveyLocationMarker.setLatLng([latitude, longitude]);
+      else surveyLocationMarker.setLatLng([Number(survey.latitude.value), Number(survey.longitude.value)]);
     });
   } else {
     surveyLocationMarker.setLatLng([latitude, longitude]);
@@ -474,7 +560,8 @@ function setSurveyLocation(latitude, longitude) {
   survey.locationStatus.textContent = nearest
     ? `Marker set at ${latitude.toFixed(3)}°N, ${longitude.toFixed(3)}°W. Nearest NASA POWER point: ${nearest.point.lat}°N, ${nearest.point.lon}°W.`
     : `Marker set at ${latitude.toFixed(3)}°N, ${longitude.toFixed(3)}°W. Climate point details will load with the dataset.`;
-  surveyLocationMarker.bindPopup(`<strong>Farm marker</strong><br>Latitude: ${latitude.toFixed(3)}<br>Longitude: ${longitude.toFixed(3)}`).openPopup();
+  surveyLocationMarker.bindPopup(`<strong>Farm marker</strong><br>Latitude: ${latitude.toFixed(3)}<br>Longitude: ${longitude.toFixed(3)}`, { autoPanPaddingTopLeft: [12, 64], autoPanPaddingBottomRight: [12, 12] }).openPopup();
+  syncScmSurveyLocation(latitude, longitude);
 }
 
 function handleSurveyMapClick(event) {
@@ -725,7 +812,7 @@ function renderAnalyticsChart(viewKey = analyticsElements.chartSelector.value) {
       "feature",
     );
   } else if (viewKey.startsWith("scm-")) {
-    // Handled by SCM viewer plugin logic below
+    renderScmChart(viewKey);
   } else {
     analyticsElements.chartTitle.textContent = "Random Forest test metrics";
     analyticsElements.chartDescription.textContent =
@@ -807,31 +894,43 @@ function loadPowerData() {
     .then((data) => {
       renderPowerData(data);
       powerPointsLayer.clearLayers();
+      surveyPointsLayer.clearLayers();
       const bounds = [];
       data.points.forEach((point) => {
-        const marker = L.circleMarker([point.lat, point.lon], {
-          color: "#12543a",
-          fillColor: "#f1b84b",
-          fillOpacity: 0.9,
-          radius: 8,
-          weight: 2,
-        }).bindPopup(
-          `<strong>NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}<br>${point.date_start} to ${point.date_end}`,
-        );
-        marker.addTo(powerPointsLayer);
-        L.circleMarker([point.lat, point.lon], {
-          color: "#12543a",
-          fillColor: "#f1b84b",
-          fillOpacity: 0.9,
-          radius: 7,
-          weight: 2,
-        }).bindPopup(
-          `<strong>Nearest NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}`,
-        ).addTo(surveyPointsLayer);
-        bounds.push([point.lat, point.lon]);
+        // Nominal weather-grid footprints, not exact source cell boundaries:
+        // the export contains sample coordinates but no grid-boundary metadata.
+        // NASA POWER weather resolution: https://power.larc.nasa.gov/docs/services/
+        // Solar parameters have a different resolution and are not mapped here.
+        const cellBounds = [
+          [point.lat - 0.25, point.lon - 0.3125],
+          [point.lat + 0.25, point.lon + 0.3125],
+        ];
+        [powerPointsLayer, surveyPointsLayer].forEach((layer) => {
+          const cell = L.rectangle(cellBounds, {
+            pane: "powerCoverage",
+            color: "#397f99",
+            weight: 1.5,
+            opacity: 0.8,
+            fillColor: "#78b9cf",
+            fillOpacity: 0.3,
+            className: "power-coverage",
+          }).bindTooltip(`NASA POWER weather sample · ${powerPointLabel(point)}`, {
+            sticky: true,
+            className: "map-label",
+          }).addTo(layer);
+          cell.on("mouseover", () => cell.setStyle({ fillOpacity: 0.48 }));
+          cell.on("mouseout", () => cell.setStyle({ fillOpacity: 0.3 }));
+          if (layer === powerPointsLayer) {
+            cell.bindPopup(`<strong>NASA POWER weather coverage</strong><br>Approximate grid: 0.5° × 0.625°<br>Sample: ${powerPointLabel(point)}<br>${point.observations.toLocaleString()} daily records<br>${point.date_start} to ${point.date_end}`);
+          }
+        });
+        bounds.push(...cellBounds);
       });
-      if (bounds.length) farmMap.fitBounds(bounds, { padding: [35, 35] });
-      areaElements.status.textContent = `NASA POWER loaded: ${data.points.length} LAT/LON points shown.`;
+      if (bounds.length) {
+        powerCoverageBounds = L.latLngBounds(bounds);
+        fitOverview();
+      }
+      areaElements.status.textContent = `${data.points.length} NASA POWER sample locations loaded.`;
     })
     .catch((error) => {
       analyticsElements.dataStatus.textContent = "Data load failed";
@@ -860,25 +959,176 @@ function selectArea(key, moveMap = true) {
     button.classList.toggle("active", button.dataset.area === key);
   });
   Object.entries(areaLayers).forEach(([areaKey, layer]) => {
-    layer.setStyle({ fillOpacity: areaKey === key ? 0.3 : 0.12, weight: areaKey === key ? 3 : 1 });
+    layer.setStyle({ fillOpacity: areaKey === key ? 0.22 : 0.1, weight: areaKey === key ? 3 : 1 });
   });
-  powerPointsLayer.clearLayers();
   if (key === "eastern-washington") loadPowerData();
-  if (moveMap) farmMap.flyTo(area.coordinates, area.zoom, { duration: 0.7 });
+  if (moveMap) {
+    if (regionBounds || powerCoverageBounds) fitOverview(true);
+    else farmMap.flyTo(area.coordinates, area.zoom, { duration: 0.7 });
+  }
 }
 
-Object.entries(areas).forEach(([key, area]) => {
-  const layer = L.circle(area.coordinates, {
-    color: "#1d7a50",
-    fillColor: "#69b88b",
-    fillOpacity: key === selectedAreaKey ? 0.3 : 0.12,
-    radius: 80000,
-    weight: key === selectedAreaKey ? 3 : 1,
-  }).addTo(farmMap);
-  layer.bindTooltip(area.name);
-  layer.on("click", () => selectArea(key));
-  areaLayers[key] = layer;
-});
+// Geographic context around the study area: neighbouring states, southern Canada,
+// western Washington counties and reference cities. Drawn as vectors so the map
+// reads even before (or without) basemap tiles.
+const contextPlaceLabels = [
+  { name: "British Columbia", latlng: [49.75, -119.2], kind: "region" },
+  { name: "Oregon", latlng: [44.75, -120.3], kind: "region" },
+  { name: "Idaho", latlng: [45.2, -115.3], kind: "region" },
+  { name: "Montana", latlng: [47.1, -112.4], kind: "region" },
+  { name: "Western Washington", latlng: [47.35, -123.15], kind: "region" },
+  { name: "Pacific Ocean", latlng: [46.6, -125.4], kind: "water" },
+];
+
+const contextCities = [
+  { name: "Seattle", latlng: [47.606, -122.332] },
+];
+
+function addRegionContext(map, contextData, { placeLabels }) {
+  map.createPane("context");
+  map.getPane("context").style.zIndex = 350;
+  map.getPane("context").style.pointerEvents = "none";
+  L.geoJSON(contextData, {
+    pane: "context",
+    interactive: false,
+    style: (feature) => {
+      const kind = feature.properties.kind;
+      if (kind === "wa-county-lines") return { color: "#6f8a7b", weight: 0.7, opacity: 0.5 };
+      if (feature.properties.name === "Washington")
+        return { color: "#3f6a55", weight: 1.6, opacity: 0.8, fillColor: "#ffffff", fillOpacity: 0.35 };
+      return { color: "#7f9488", weight: 1.1, opacity: 0.75, fillColor: "#e9e4d8", fillOpacity: 0.4 };
+    },
+  }).addTo(map);
+
+  const cityMarker = (city) =>
+    L.marker(city.latlng, {
+      interactive: false,
+      keyboard: false,
+      icon: L.divIcon({
+        className: `city-label${city.side === "left" ? " city-label-left" : ""}`,
+        html: `<i></i><span>${city.name}</span>`,
+        iconSize: [0, 0],
+      }),
+    });
+  L.layerGroup(contextCities.map(cityMarker)).addTo(map);
+  if (placeLabels) {
+    contextPlaceLabels.forEach((place) =>
+      L.marker(place.latlng, {
+        interactive: false,
+        keyboard: false,
+        icon: L.divIcon({ className: `place-label place-label-${place.kind}`, html: `<span>${place.name}</span>`, iconSize: [0, 0] }),
+      }).addTo(map),
+    );
+  }
+}
+
+fetch("data/region-context.geojson")
+  .then((response) => {
+    if (!response.ok) throw new Error(`Context request failed: ${response.status}`);
+    return response.json();
+  })
+  .then((contextData) => {
+    addRegionContext(farmMap, contextData, { placeLabels: true });
+    addRegionContext(surveyMap, contextData, { placeLabels: false });
+  })
+  .catch((error) => console.info("Map context layer unavailable.", error));
+
+// Area-weighted centroid of a feature's largest outer ring, as [lat, lng].
+function polygonLabelPoint(geometry) {
+  const polygons = geometry.type === "MultiPolygon" ? geometry.coordinates : [geometry.coordinates];
+  let best = null;
+  polygons.forEach((polygon) => {
+    const ring = polygon[0];
+    let area = 0;
+    let x = 0;
+    let y = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const cross = ring[j][0] * ring[i][1] - ring[i][0] * ring[j][1];
+      area += cross;
+      x += (ring[j][0] + ring[i][0]) * cross;
+      y += (ring[j][1] + ring[i][1]) * cross;
+    }
+    if (!best || Math.abs(area) > Math.abs(best.area)) best = { area, lng: x / (3 * area), lat: y / (3 * area) };
+  });
+  return [best.lat, best.lng];
+}
+
+// County names. At the overview zoom only well-spaced large counties are labeled;
+// every county is labeled once the map is zoomed in.
+const overviewCountyLabels = new Set(["Okanogan", "Stevens", "Chelan", "Grant", "Lincoln", "Kittitas", "Yakima", "Adams", "Whitman", "Klickitat", "Franklin"]);
+
+function addCountyLabels(map, counties, overviewMinWidth) {
+  const makeLabel = (county) =>
+    L.marker(polygonLabelPoint(county.geometry), {
+      interactive: false,
+      keyboard: false,
+      icon: L.divIcon({ className: "county-label", html: `<span>${county.properties.name}</span>`, iconSize: [0, 0] }),
+    });
+  const all = L.layerGroup(counties.map(makeLabel));
+  const overview = L.layerGroup(counties.filter((county) => overviewCountyLabels.has(county.properties.name)).map(makeLabel));
+  const update = () => {
+    const zoom = map.getZoom();
+    const showAll = zoom >= 7;
+    const showOverview = !showAll && zoom >= 6 && map.getSize().x >= overviewMinWidth;
+    if (showAll) all.addTo(map);
+    else all.remove();
+    if (showOverview) overview.addTo(map);
+    else overview.remove();
+  };
+  map.on("zoomend resize", update);
+  update();
+}
+
+// Eastern Washington drawn from its real county boundaries (US Census, via us-atlas).
+fetch("data/eastern-washington.geojson")
+  .then((response) => {
+    if (!response.ok) throw new Error(`Region boundary request failed: ${response.status}`);
+    return response.json();
+  })
+  .then((regionData) => {
+    const counties = regionData.features.filter((feature) => feature.properties.kind === "county");
+    const region = regionData.features.find((feature) => feature.properties.kind === "region");
+    [
+      [farmMap, 560],
+      [surveyMap, Infinity],
+    ].forEach(([map, overviewMinWidth]) => {
+      L.geoJSON(counties, {
+        interactive: false,
+        style: { color: "#1d7a50", weight: 0.8, opacity: 0.55, fill: false },
+      }).addTo(map);
+      addCountyLabels(map, counties, overviewMinWidth);
+    });
+    const key = region.properties.area_key;
+    const layer = L.geoJSON(region, {
+      style: {
+        color: "#12543a",
+        weight: key === selectedAreaKey ? 3 : 1,
+        fillColor: "#69b88b",
+        fillOpacity: key === selectedAreaKey ? 0.22 : 0.1,
+      },
+    }).addTo(farmMap);
+    layer.bindTooltip(areas[key].name, { className: "map-tooltip", sticky: true });
+    layer.on("click", () => selectArea(key));
+    layer.bringToBack();
+    areaLayers[key] = layer;
+    regionBounds = layer.getBounds();
+    fitOverview();
+  })
+  .catch((error) => {
+    console.info("Region boundary unavailable; using the area circle.", error);
+    Object.entries(areas).forEach(([key, area]) => {
+      const layer = L.circle(area.coordinates, {
+        color: "#1d7a50",
+        fillColor: "#69b88b",
+        fillOpacity: key === selectedAreaKey ? 0.3 : 0.12,
+        radius: 80000,
+        weight: key === selectedAreaKey ? 3 : 1,
+      }).addTo(farmMap);
+      layer.bindTooltip(area.name);
+      layer.on("click", () => selectArea(key));
+      areaLayers[key] = layer;
+    });
+  });
 
 function terrainStyle(feature) {
   const slope = feature.properties.slope_mean_degrees;
@@ -930,6 +1180,7 @@ document.querySelector("#use-area").addEventListener("click", () => {
 let scmData = null;
 let activeScmCell = null;
 const scmLayerGroup = L.layerGroup().addTo(farmMap);
+farmLayerControl.addOverlay(scmLayerGroup, "SCM parcels");
 
 function nearestScmCell(latitude, longitude) {
   if (!scmData?.cells?.length) return null;
@@ -950,21 +1201,18 @@ function applyScmCellToSimulator(cell) {
     {
       key: "conventional",
       name: "Conventional monoculture (CF 1)",
-      waterDemand: "High synthetic N demand",
     },
     {
       key: "cover-crops",
       name: "Legume / cover rotation (CF 2)",
-      waterDemand: "Moderate (+0.8% moisture retention)",
     },
     {
       key: "alternative",
       name: "Low-water pulse rotation (CF 3)",
-      waterDemand: "Low–moderate (alternating pulse)",
     },
   ];
 
-  mapConfig.forEach(({ key, name, waterDemand }) => {
+  mapConfig.forEach(({ key, name }) => {
     const s = cell.scenarios[key];
     if (!s || !scenarios[key]) return;
     const scenario = scenarios[key];
@@ -972,9 +1220,16 @@ function applyScmCellToSimulator(cell) {
     scenario.moisture = Number(s.mean_sm.toFixed(2));
     scenario.meter = Math.min(100, Math.round((s.mean_sm / 0.4) * 100));
     scenario.health = `${s.end_soil_health.toFixed(1)} / 100 (SSURGO+CDL)`;
-    scenario.resilience = `${s.total_yield_bu_ac.toFixed(1)} bu/ac yield`;
-    scenario.waterDemand = `${waterDemand} · Cost: $${s.total_cost_ac.toFixed(0)}/ac`;
-    scenario.soilEffect = `Net Profit: $${s.total_profit_ac.toFixed(2)}/ac (${cell.rotation_3yr})`;
+    scenario.resilience = `${s.total_yield_bu_ac.toFixed(1)} bu/ac`;
+    scenario.waterDemand = `$${s.total_cost_ac.toFixed(2)}/ac`;
+    scenario.soilEffect = `$${s.total_profit_ac.toFixed(2)}/ac`;
+    scenario.metricLabels = {
+      health: "Ending soil health",
+      resilience: "Simulated yield",
+      waterDemand: "Production cost",
+      soilEffect: "Net return",
+      confidence: "DML lag-0 coefficient",
+    };
     scenario.recommendation =
       key === cell.recommended_strategy
         ? `SCM Optimal (+$${cell.profit_gain_ac.toFixed(2)}/ac vs monoculture)`
@@ -988,10 +1243,11 @@ function applyScmCellToSimulator(cell) {
       `Net Return = $${s.total_profit_ac.toFixed(2)}/ac, Ending Soil Health = ${s.end_soil_health.toFixed(1)}/100.`;
     scenario.assumptions =
       "Structural equations populated via Dynamic DML (statspai) on NASA POWER daily agro-climatology, USDA CDL rotations, NASS yields, ERS costs, and NRCS SSURGO soil properties.";
-    scenario.confidence = `Dynamic DML lag-0 weight: ${scmData.dml_theta_lags[0]?.theta ?? 0.0042}`;
+    scenario.confidence = `${scmData.dml_theta_lags[0]?.theta ?? "Unavailable"}`;
   });
 
   selectScenario(activeRecommendationKey || cell.recommended_strategy || "cover-crops");
+  if (analyticsElements.chartSelector.value === "scm-cf-trajectory") renderScmChart();
 }
 
 function registerScmChartOptions() {
@@ -1010,38 +1266,37 @@ function registerScmChartOptions() {
       analyticsElements.chartSelector.append(opt);
     }
   });
+}
 
-  analyticsElements.chartSelector.addEventListener("change", (event) => {
-    const viewKey = event.target.value;
-    if (!scmData || !viewKey.startsWith("scm-")) return;
+function renderScmChart(viewKey = analyticsElements.chartSelector.value) {
+  if (!scmData || !viewKey.startsWith("scm-")) return;
 
-    if (viewKey === "scm-dml-lags") {
-      analyticsElements.chartTitle.textContent = "Dynamic DML causal carryover weights (NASA POWER -> Soil Moisture)";
-      analyticsElements.chartDescription.textContent =
-        "Estimated causal effect of PRECTOTCORR (mm) on root-zone soil moisture across lags t-0 to t-5, controlling for VPD, ET0, T2M, and >10 km spatial neighbor spillovers.";
-      renderBarChart(scmData.dml_theta_lags, "theta", "Dynamic DML Lag Weights", "m³/m³ per mm", "lag");
-    } else if (viewKey === "scm-cf-yield") {
-      analyticsElements.chartTitle.textContent = "Spatiotemporal SCM counterfactual crop yields (Eastern WA mean)";
-      analyticsElements.chartDescription.textContent =
-        "Comparison of cumulative wheat-equivalent yield (bu/ac) across baseline monoculture, legume/cover rotation, heatwave shock, and >10 km neighbor spillover.";
-      renderBarChart(scmData.regional_summary, "mean_yield_bu_ac", "Counterfactual Crop Yields", "bu/ac", "label");
-    } else if (viewKey === "scm-cf-soil") {
-      analyticsElements.chartTitle.textContent = "Spatiotemporal SCM counterfactual soil health index (0–100)";
-      analyticsElements.chartDescription.textContent =
-        "Ending soil health index combining USDA NRCS SSURGO organic matter + available water capacity + CDL legume/cover rotation effects.";
-      renderBarChart(scmData.regional_summary, "mean_soil_health", "Counterfactual Soil Health", "index", "label");
-    } else if (viewKey === "scm-cf-trajectory") {
-      const cell = activeScmCell || scmData.cells[0];
-      const shItems = cell.scenarios["cover-crops"].trajectories.soil_health.map((val, idx) => ({
-        period: `t=${idx}`,
-        soil_health: val,
-      }));
-      analyticsElements.chartTitle.textContent = `Parcel ${cell.cell_id} (${cell.county_name}) — 8-period legume rotation soil health trajectory`;
-      analyticsElements.chartDescription.textContent =
-        `Observed 3-yr CDL rotation: ${cell.rotation_3yr} · Net profit gain from legume/cover rotation: +$${cell.profit_gain_ac.toFixed(2)}/ac.`;
-      renderBarChart(shItems, "soil_health", "8-Period Soil Health Trajectory", "score", "period");
-    }
-  });
+  if (viewKey === "scm-dml-lags") {
+    analyticsElements.chartTitle.textContent = "Dynamic DML causal carryover weights (NASA POWER -> Soil Moisture)";
+    analyticsElements.chartDescription.textContent =
+      "Estimated causal effect of PRECTOTCORR (mm) on root-zone soil moisture across lags t-0 to t-5, controlling for VPD, ET0, T2M, and >10 km spatial neighbor spillovers.";
+    renderBarChart(scmData.dml_theta_lags, "theta", "Dynamic DML Lag Weights", "m³/m³ per mm", "lag");
+  } else if (viewKey === "scm-cf-yield") {
+    analyticsElements.chartTitle.textContent = "Spatiotemporal SCM counterfactual crop yields (Eastern WA mean)";
+    analyticsElements.chartDescription.textContent =
+      "Comparison of cumulative wheat-equivalent yield (bu/ac) across baseline monoculture, legume/cover rotation, heatwave shock, and >10 km neighbor spillover.";
+    renderBarChart(scmData.regional_summary, "mean_yield_bu_ac", "Counterfactual Crop Yields", "bu/ac", "label");
+  } else if (viewKey === "scm-cf-soil") {
+    analyticsElements.chartTitle.textContent = "Spatiotemporal SCM counterfactual soil health index (0–100)";
+    analyticsElements.chartDescription.textContent =
+      "Ending soil health index combining USDA NRCS SSURGO organic matter + available water capacity + CDL legume/cover rotation effects.";
+    renderBarChart(scmData.regional_summary, "mean_soil_health", "Counterfactual Soil Health", "index", "label");
+  } else if (viewKey === "scm-cf-trajectory") {
+    const cell = activeScmCell || scmData.cells[0];
+    const shItems = cell.scenarios["cover-crops"].trajectories.soil_health.map((val, idx) => ({
+      period: `t=${idx}`,
+      soil_health: val,
+    }));
+    analyticsElements.chartTitle.textContent = `Parcel ${cell.cell_id} (${cell.county_name}) — 8-period legume rotation soil health trajectory`;
+    analyticsElements.chartDescription.textContent =
+      `Observed 3-yr CDL rotation: ${cell.rotation_3yr} · Net profit gain from legume/cover rotation: +$${cell.profit_gain_ac.toFixed(2)}/ac.`;
+    renderBarChart(shItems, "soil_health", "8-Period Soil Health Trajectory", "score", "period");
+  }
 }
 
 function loadScmCounterfactualData() {
@@ -1062,6 +1317,7 @@ function loadScmCounterfactualData() {
           fillOpacity: 0.85,
           radius: 7,
           weight: 2,
+          className: "scm-parcel",
         }).bindPopup(
           `<strong>10 km SCM Parcel: ${cell.cell_id}</strong><br>` +
           `County: ${cell.county_name} (${cell.ers_region})<br>` +
@@ -1079,7 +1335,11 @@ function loadScmCounterfactualData() {
       });
 
       if (data.cells.length > 0) {
-        applyScmCellToSimulator(data.cells[0]);
+        if (survey.latitude.value && survey.longitude.value) {
+          syncScmSurveyLocation(Number(survey.latitude.value), Number(survey.longitude.value));
+        } else {
+          applyScmCellToSimulator(data.cells[0]);
+        }
       }
     })
     .catch((error) => {
@@ -1087,22 +1347,15 @@ function loadScmCounterfactualData() {
     });
 }
 
-// Hook survey map clicks and survey submission into the nearest 10 km SCM parcel
-surveyMap.on("click", (event) => {
-  if (!scmData || !easternWashingtonBounds.contains(event.latlng)) return;
-  const nearestCell = nearestScmCell(event.latlng.lat, event.latlng.lng);
+// Both map clicks and marker drags pass through setSurveyLocation.
+function syncScmSurveyLocation(latitude, longitude) {
+  const nearestCell = nearestScmCell(latitude, longitude);
   if (nearestCell) {
     applyScmCellToSimulator(nearestCell);
     survey.locationStatus.textContent =
       `Marker matched to 10 km SCM Parcel ${nearestCell.cell_id} (${nearestCell.county_name} County · ` +
       `CDL Rotation: ${nearestCell.rotation_3yr} · Legume Profit Gain: +$${nearestCell.profit_gain_ac}/ac).`;
   }
-});
-
-survey.next.addEventListener("click", () => {
-  if (survey.currentStep === survey.steps.length && activeScmCell) {
-    window.setTimeout(() => applyScmCellToSimulator(activeScmCell), 60);
-  }
-});
+}
 
 loadScmCounterfactualData();
