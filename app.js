@@ -304,6 +304,10 @@ const analyticsElements = {
   tableStatus: document.querySelector("#table-status"),
   tableBody: document.querySelector("#analytics-table-body"),
   datasetNote: document.querySelector("#dataset-note"),
+  stressSummary: document.querySelector("#stress-summary"),
+  modelMetrics: document.querySelector("#model-metrics"),
+  zoneSummary: document.querySelector("#zone-summary"),
+  confusionMatrix: document.querySelector("#confusion-matrix"),
 };
 
 const chartViews = {
@@ -449,7 +453,33 @@ function renderPowerData(data) {
         `<tr><td>${row.LAT}</td><td>${row.LON}</td><td>${row.date}</td><td>${row.T2M.toFixed(2)}°C</td><td>${row.PRECTOTCORR.toFixed(2)}</td></tr>`,
     )
     .join("");
+  renderDiagnostics(data);
   renderAnalyticsChart();
+}
+
+function renderDiagnostics(data) {
+  const formatPercent = (value) => `${(Number(value) * 100).toFixed(1)}%`;
+  analyticsElements.stressSummary.innerHTML = `
+    <span><strong>${Number(data.stress_risk_summary.mean).toFixed(3)}</strong><small>Mean</small></span>
+    <span><strong>${Number(data.stress_risk_summary.median).toFixed(3)}</strong><small>Median</small></span>
+    <span><strong>${Number(data.stress_risk_summary.max).toFixed(3)}</strong><small>Maximum</small></span>`;
+  analyticsElements.modelMetrics.innerHTML = Object.entries(data.metrics)
+    .map(([metric, value]) => `<span><strong>${formatPercent(value)}</strong><small>${metric}</small></span>`)
+    .join("");
+  analyticsElements.zoneSummary.innerHTML = data.zones
+    .map((zone) => {
+      const meaning = data.zone_meanings.find((item) => item.zone === zone.zone)?.meaning || "";
+      return `<div><strong>Zone ${zone.zone}: ${zone.label}</strong><span>${zone.observations.toLocaleString()} observations (${zone.share_pct.toFixed(1)}%) · ${meaning}</span></div>`;
+    })
+    .join("");
+  const [lowerLabel, higherLabel] = data.confusion_matrix.labels;
+  const [[trueLower, falseHigher], [falseLower, trueHigher]] = data.confusion_matrix.values;
+  analyticsElements.confusionMatrix.innerHTML = `
+    <table class="data-table confusion-table">
+      <thead><tr><th>Actual \\ Predicted</th><th>${lowerLabel}</th><th>${higherLabel}</th></tr></thead>
+      <tbody><tr><th>${lowerLabel}</th><td>${trueLower.toLocaleString()}</td><td>${falseHigher.toLocaleString()}</td></tr>
+      <tr><th>${higherLabel}</th><td>${falseLower.toLocaleString()}</td><td>${trueHigher.toLocaleString()}</td></tr></tbody>
+    </table>`;
 }
 
 function loadPowerData() {

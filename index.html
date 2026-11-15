@@ -262,6 +262,37 @@
             <p id="dataset-note" class="data-footnote">The web app uses a compact derived file from the executed NASA POWER notebook.</p>
           </article>
         </div>
+        <div class="diagnostics-panel" id="model-diagnostics" aria-live="polite">
+          <div class="diagnostics-heading">
+            <div>
+              <span class="stat-label">Notebook model outputs</span>
+              <h3>Statistical diagnostics</h3>
+            </div>
+            <p>Exploratory results from the Eastern Washington NASA POWER dataset.</p>
+          </div>
+          <div class="diagnostics-grid">
+            <article class="diagnostic-card">
+              <h4>Stress-risk proxy summary</h4>
+              <div id="stress-summary" class="diagnostic-values">Loading…</div>
+              <p>Weighted heat, frost, and low-precipitation score; not measured crop stress.</p>
+            </article>
+            <article class="diagnostic-card">
+              <h4>Random Forest test metrics</h4>
+              <div id="model-metrics" class="diagnostic-values">Loading…</div>
+              <p>Chronological holdout for the next-day environmental stress proxy.</p>
+            </article>
+            <article class="diagnostic-card">
+              <h4>Environmental-zone sizes and meaning</h4>
+              <div id="zone-summary" class="diagnostic-list">Loading…</div>
+              <p>Zones are exploratory climate regimes from K-Means clustering.</p>
+            </article>
+            <article class="diagnostic-card">
+              <h4>Confusion matrix</h4>
+              <div id="confusion-matrix" class="data-table-wrap">Loading…</div>
+              <p>Rows are actual classes; columns are predicted classes.</p>
+            </article>
+          </div>
+        </div>
       </section>
 
       <section class="section rotation-methods" aria-labelledby="rotation-methods-title">
