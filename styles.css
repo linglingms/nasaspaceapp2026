@@ -362,14 +362,14 @@ input::placeholder { color: var(--muted); opacity: 1; }
 .leaflet-tooltip.map-tooltip::before { display: none; }
 .leaflet-tooltip.map-label { padding: 2px 7px; border: 0; border-radius: 6px; color: var(--ink); background: rgb(255 255 255 / 90%); box-shadow: 0 1px 4px rgb(23 53 43 / 18%); font-size: .7rem; font-weight: 600; font-variant-numeric: tabular-nums; }
 .leaflet-tooltip.map-label::before { display: none; }
-.power-point { filter: drop-shadow(0 1px 3px rgb(23 53 43 / 45%)); }
+.power-point { filter: drop-shadow(0 1px 1.5px rgb(23 53 43 / 30%)); }
 .farm-marker svg { width: 32px; height: 42px; overflow: visible; filter: drop-shadow(0 3px 4px rgb(23 53 43 / 35%)); }
 .farm-marker path { fill: var(--green); stroke: white; stroke-width: 2; }
 .farm-marker circle { fill: white; }
 .map-legend { position: absolute; z-index: 800; left: 58px; top: 10px; display: grid; gap: 6px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; color: var(--ink); background: rgb(255 255 255 / 92%); box-shadow: 0 6px 18px rgb(23 53 43 / 12%); font-size: .72rem; font-weight: 600; pointer-events: none; }
 .map-legend span { display: flex; gap: 8px; align-items: center; }
 .legend-region { width: 16px; height: 12px; border: 2px solid #12543a; border-radius: 3px; background: rgb(105 184 139 / 35%); }
-.legend-point { width: 12px; height: 12px; border: 2.5px solid white; border-radius: 50%; background: #e09a1f; box-shadow: 0 0 0 1px rgb(23 53 43 / 25%); }
+.legend-point { width: 10px; height: 10px; border: 2px solid #12543a; border-radius: 50%; background: #fff; }
 .map-caption { border-top: 1px solid var(--line); }
 @media (max-width: 760px) {
   .map-legend { position: static; display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; background: transparent; padding: 10px 14px; font-size: .72rem; }

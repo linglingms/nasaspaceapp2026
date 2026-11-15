@@ -857,27 +857,26 @@ function loadPowerData() {
       const bounds = [];
       data.points.forEach((point) => {
         const marker = L.circleMarker([point.lat, point.lon], {
-          color: "#ffffff",
-          fillColor: "#e09a1f",
+          color: "#12543a",
+          fillColor: "#ffffff",
           fillOpacity: 1,
-          radius: 8,
-          weight: 3,
+          radius: 5,
+          weight: 2,
           className: "power-point",
-        }).bindTooltip(powerPointLabel(point), {
-          permanent: true,
-          direction: "right",
-          offset: [10, 0],
+        }).bindTooltip(`NASA POWER point · ${powerPointLabel(point)}`, {
+          direction: "top",
+          offset: [0, -6],
           className: "map-label",
         }).bindPopup(
           `<strong>NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}<br>${point.date_start} to ${point.date_end}`,
         );
         marker.addTo(powerPointsLayer);
         L.circleMarker([point.lat, point.lon], {
-          color: "#ffffff",
-          fillColor: "#e09a1f",
+          color: "#12543a",
+          fillColor: "#ffffff",
           fillOpacity: 1,
-          radius: 7,
-          weight: 3,
+          radius: 4.5,
+          weight: 2,
           className: "power-point",
         }).bindPopup(
           `<strong>Nearest NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}`,
