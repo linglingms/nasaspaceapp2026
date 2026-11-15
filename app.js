@@ -294,12 +294,12 @@ const areas = {
   "eastern-washington": {
     name: "Eastern Washington data",
     description:
-      "NASA POWER sample data labeled Eastern Washington in the notebook. The source coordinates currently resolve to Iowa, so verify the export before geographic interpretation.",
+      "NASA POWER sample data covering Eastern Washington from 45.5–48.5°N and 122.5–117.5°W.",
     crops: "Wheat analysis dataset",
     terrain: "Dataset points · Coordinates loaded from NASA POWER export",
     focus: "Climate analytics",
-    coordinates: [42.5, -92.5],
-    zoom: 7,
+    coordinates: [47, -120],
+    zoom: 6,
   },
 };
 
@@ -448,7 +448,7 @@ function renderAnalyticsChart(viewKey = analyticsElements.chartSelector.value) {
     analyticsElements.chartDescription.textContent =
       "K-Means climate regimes derived from the notebook analysis.";
     renderBarChart(powerData.zones, "mean_stress_risk", "Environmental zones", "score", "zone");
-  } else {
+  } else if (viewKey === "feature-importance") {
     analyticsElements.chartTitle.textContent = "Random Forest feature importance";
     analyticsElements.chartDescription.textContent =
       "Features ranked by importance in the exploratory next-day stress proxy model.";
@@ -458,6 +458,17 @@ function renderAnalyticsChart(viewKey = analyticsElements.chartSelector.value) {
       "Random Forest feature importance",
       "importance",
       "feature",
+    );
+  } else {
+    analyticsElements.chartTitle.textContent = "Random Forest test metrics";
+    analyticsElements.chartDescription.textContent =
+      "Chronological holdout metrics for the exploratory next-day stress proxy.";
+    renderBarChart(
+      Object.entries(powerData.metrics).map(([metric, value]) => ({ metric, value })),
+      "value",
+      "Random Forest test metrics",
+      "score",
+      "metric",
     );
   }
 }
