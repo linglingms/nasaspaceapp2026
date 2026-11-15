@@ -422,32 +422,78 @@ const terrainLayers = {};
 let powerData = null;
 let commodityData = null;
 let powerPointsLayer;
+let regionBounds = null;
 const farmMap = L.map("farm-map", { scrollWheelZoom: false }).setView(
   areas[selectedAreaKey].coordinates,
   areas[selectedAreaKey].zoom,
 );
 
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 18,
-}).addTo(farmMap);
+// Basemaps: a quiet cartographic base by default, with a satellite option.
+function createBasemaps() {
+  return {
+    Map: L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: "abcd",
+      maxZoom: 19,
+    }),
+    Satellite: L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        attribution: "Imagery &copy; Esri, Maxar, Earthstar Geographics",
+        maxZoom: 18,
+      },
+    ),
+  };
+}
+
+function addBasemaps(map) {
+  const basemaps = createBasemaps();
+  basemaps.Map.addTo(map);
+  L.control.layers(basemaps, null, { position: "topright", collapsed: false }).addTo(map);
+  return basemaps;
+}
+
+addBasemaps(farmMap);
+L.control.scale({ imperial: true, metric: true, position: "bottomleft" }).addTo(farmMap);
 
 powerPointsLayer = L.layerGroup().addTo(farmMap);
 
 surveyMap = L.map("survey-map", { scrollWheelZoom: false }).fitBounds(easternWashingtonBounds);
 surveyMap.setMaxBounds(easternWashingtonBounds);
+addBasemaps(surveyMap);
+// Dim everything outside the survey boundary so the allowed area reads at a glance.
+L.polygon(
+  [
+    [[85, -180], [85, 180], [-85, 180], [-85, -180]],
+    [
+      easternWashingtonBounds.getNorthWest(),
+      easternWashingtonBounds.getNorthEast(),
+      easternWashingtonBounds.getSouthEast(),
+      easternWashingtonBounds.getSouthWest(),
+    ],
+  ],
+  { stroke: false, fillColor: "#17352b", fillOpacity: 0.32, interactive: false },
+).addTo(surveyMap);
 L.rectangle(easternWashingtonBounds, {
   color: "#12543a",
   weight: 2,
   dashArray: "6 6",
-  fillColor: "#69b88b",
-  fillOpacity: 0.08,
-}).addTo(surveyMap).bindTooltip("Eastern Washington survey boundary");
-L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-  attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
-  maxZoom: 18,
-}).addTo(surveyMap);
+  fill: false,
+}).addTo(surveyMap).bindTooltip("Eastern Washington survey boundary", { className: "map-tooltip", sticky: true });
 const surveyPointsLayer = L.layerGroup().addTo(surveyMap);
+
+const farmMarkerIcon = L.divIcon({
+  className: "farm-marker",
+  html: '<svg viewBox="0 0 32 42" aria-hidden="true"><path d="M16 1C7.7 1 1 7.6 1 15.8 1 27 16 41 16 41s15-14 15-25.2C31 7.6 24.3 1 16 1z"/><circle cx="16" cy="15.5" r="5.5"/></svg>',
+  iconSize: [32, 42],
+  iconAnchor: [16, 41],
+  popupAnchor: [0, -36],
+});
+
+function powerPointLabel(point) {
+  return `${point.lat.toFixed(1)}°N ${Math.abs(point.lon).toFixed(1)}°W`;
+}
 
 function nearestPowerPoint(latitude, longitude) {
   if (!powerData?.points?.length) return null;
@@ -461,7 +507,7 @@ function setSurveyLocation(latitude, longitude) {
   survey.latitude.value = latitude.toFixed(5);
   survey.longitude.value = longitude.toFixed(5);
   if (!surveyLocationMarker) {
-    surveyLocationMarker = L.marker([latitude, longitude], { draggable: true }).addTo(surveyMap);
+    surveyLocationMarker = L.marker([latitude, longitude], { draggable: true, icon: farmMarkerIcon, title: "Your farm" }).addTo(surveyMap);
     surveyLocationMarker.on("dragend", (event) => {
       const position = event.target.getLatLng();
       if (easternWashingtonBounds.contains(position)) setSurveyLocation(position.lat, position.lng);
@@ -474,7 +520,7 @@ function setSurveyLocation(latitude, longitude) {
   survey.locationStatus.textContent = nearest
     ? `Marker set at ${latitude.toFixed(3)}°N, ${longitude.toFixed(3)}°W. Nearest NASA POWER point: ${nearest.point.lat}°N, ${nearest.point.lon}°W.`
     : `Marker set at ${latitude.toFixed(3)}°N, ${longitude.toFixed(3)}°W. Climate point details will load with the dataset.`;
-  surveyLocationMarker.bindPopup(`<strong>Farm marker</strong><br>Latitude: ${latitude.toFixed(3)}<br>Longitude: ${longitude.toFixed(3)}`).openPopup();
+  surveyLocationMarker.bindPopup(`<strong>Farm marker</strong><br>Latitude: ${latitude.toFixed(3)}<br>Longitude: ${longitude.toFixed(3)}`, { autoPanPaddingTopLeft: [12, 64], autoPanPaddingBottomRight: [12, 12] }).openPopup();
 }
 
 function handleSurveyMapClick(event) {
@@ -599,7 +645,7 @@ function renderBarChart(items, valueKey, title, unit, labelKey) {
       const barHeight = (value / max) * 185;
       const x = 56 + index * ((width - 100) / items.length);
       const y = 210 - barHeight;
-      const label = item[labelKey] || item.feature;
+      const label = item[labelKey] ?? item.feature;
       return `<g><rect class="chart-bar" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4"><title>${label}: ${formatChartValue(value)} ${unit}</title></rect><text x="${x + barWidth / 2}" y="229" text-anchor="middle">${label}</text><text class="chart-bar-value" x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle">${formatChartValue(value)}</text></g>`;
     })
     .join("");
@@ -622,13 +668,13 @@ function renderStaticModelCharts(data) {
         const barHeight = (value / max) * 185;
         const x = 56 + index * ((width - 100) / items.length);
         const y = 210 - barHeight;
-        const label = item[labelKey] || item.feature;
+        const label = item[labelKey] ?? item.feature;
         return `<g><rect class="chart-bar" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4"><title>${label}: ${formatChartValue(value)} ${unit}</title></rect><text x="${x + barWidth / 2}" y="229" text-anchor="middle">${label}</text><text class="chart-bar-value" x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle">${formatChartValue(value)}</text></g>`;
       })
       .join("");
     target.innerHTML = `<svg class="analytics-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}"><line class="axis-line" x1="45" y1="210" x2="${width - 24}" y2="210"></line>${bars}</svg>`;
   };
-  renderInto(analyticsElements.zonesChart, data.zones, "mean_stress_risk", "Environmental zones", "score", "zone");
+  renderInto(analyticsElements.zonesChart, data.zones, "mean_stress_risk", "Environmental zones", "score", "label");
   renderInto(analyticsElements.featureChart, data.feature_importance, "importance", "Random Forest feature importance", "importance", "feature");
 }
 
@@ -712,7 +758,7 @@ function renderAnalyticsChart(viewKey = analyticsElements.chartSelector.value) {
     analyticsElements.chartTitle.textContent = "Environmental zones";
     analyticsElements.chartDescription.textContent =
       "K-Means climate regimes derived from the notebook analysis.";
-    renderBarChart(powerData.zones, "mean_stress_risk", "Environmental zones", "score", "zone");
+    renderBarChart(powerData.zones, "mean_stress_risk", "Environmental zones", "score", "label");
   } else if (viewKey === "feature-importance") {
     analyticsElements.chartTitle.textContent = "Random Forest feature importance";
     analyticsElements.chartDescription.textContent =
@@ -808,27 +854,34 @@ function loadPowerData() {
       const bounds = [];
       data.points.forEach((point) => {
         const marker = L.circleMarker([point.lat, point.lon], {
-          color: "#12543a",
-          fillColor: "#f1b84b",
-          fillOpacity: 0.9,
+          color: "#ffffff",
+          fillColor: "#e09a1f",
+          fillOpacity: 1,
           radius: 8,
-          weight: 2,
+          weight: 3,
+          className: "power-point",
+        }).bindTooltip(powerPointLabel(point), {
+          permanent: true,
+          direction: "right",
+          offset: [10, 0],
+          className: "map-label",
         }).bindPopup(
           `<strong>NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}<br>${point.date_start} to ${point.date_end}`,
         );
         marker.addTo(powerPointsLayer);
         L.circleMarker([point.lat, point.lon], {
-          color: "#12543a",
-          fillColor: "#f1b84b",
-          fillOpacity: 0.9,
+          color: "#ffffff",
+          fillColor: "#e09a1f",
+          fillOpacity: 1,
           radius: 7,
-          weight: 2,
+          weight: 3,
+          className: "power-point",
         }).bindPopup(
           `<strong>Nearest NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}`,
         ).addTo(surveyPointsLayer);
         bounds.push([point.lat, point.lon]);
       });
-      if (bounds.length) farmMap.fitBounds(bounds, { padding: [35, 35] });
+      if (!regionBounds && bounds.length) farmMap.fitBounds(bounds, { padding: [35, 35] });
       areaElements.status.textContent = `NASA POWER loaded: ${data.points.length} LAT/LON points shown.`;
     })
     .catch((error) => {
@@ -858,25 +911,60 @@ function selectArea(key, moveMap = true) {
     button.classList.toggle("active", button.dataset.area === key);
   });
   Object.entries(areaLayers).forEach(([areaKey, layer]) => {
-    layer.setStyle({ fillOpacity: areaKey === key ? 0.3 : 0.12, weight: areaKey === key ? 3 : 1 });
+    layer.setStyle({ fillOpacity: areaKey === key ? 0.22 : 0.1, weight: areaKey === key ? 3 : 1 });
   });
   powerPointsLayer.clearLayers();
   if (key === "eastern-washington") loadPowerData();
-  if (moveMap) farmMap.flyTo(area.coordinates, area.zoom, { duration: 0.7 });
+  if (moveMap) {
+    if (regionBounds) farmMap.flyToBounds(regionBounds, { padding: [24, 24], duration: 0.7 });
+    else farmMap.flyTo(area.coordinates, area.zoom, { duration: 0.7 });
+  }
 }
 
-Object.entries(areas).forEach(([key, area]) => {
-  const layer = L.circle(area.coordinates, {
-    color: "#1d7a50",
-    fillColor: "#69b88b",
-    fillOpacity: key === selectedAreaKey ? 0.3 : 0.12,
-    radius: 80000,
-    weight: key === selectedAreaKey ? 3 : 1,
-  }).addTo(farmMap);
-  layer.bindTooltip(area.name);
-  layer.on("click", () => selectArea(key));
-  areaLayers[key] = layer;
-});
+// Eastern Washington drawn from its real county boundaries (US Census, via us-atlas).
+fetch("data/eastern-washington.geojson")
+  .then((response) => {
+    if (!response.ok) throw new Error(`Region boundary request failed: ${response.status}`);
+    return response.json();
+  })
+  .then((regionData) => {
+    const counties = regionData.features.filter((feature) => feature.properties.kind === "county");
+    const region = regionData.features.find((feature) => feature.properties.kind === "region");
+    L.geoJSON(counties, {
+      interactive: false,
+      style: { color: "#1d7a50", weight: 0.8, opacity: 0.45, fill: false },
+    }).addTo(farmMap);
+    const key = region.properties.area_key;
+    const layer = L.geoJSON(region, {
+      style: {
+        color: "#12543a",
+        weight: key === selectedAreaKey ? 3 : 1,
+        fillColor: "#69b88b",
+        fillOpacity: key === selectedAreaKey ? 0.22 : 0.1,
+      },
+    }).addTo(farmMap);
+    layer.bindTooltip(areas[key].name, { className: "map-tooltip", sticky: true });
+    layer.on("click", () => selectArea(key));
+    layer.bringToBack();
+    areaLayers[key] = layer;
+    regionBounds = layer.getBounds();
+    farmMap.fitBounds(regionBounds, { padding: [24, 24] });
+  })
+  .catch((error) => {
+    console.info("Region boundary unavailable; using the area circle.", error);
+    Object.entries(areas).forEach(([key, area]) => {
+      const layer = L.circle(area.coordinates, {
+        color: "#1d7a50",
+        fillColor: "#69b88b",
+        fillOpacity: key === selectedAreaKey ? 0.3 : 0.12,
+        radius: 80000,
+        weight: key === selectedAreaKey ? 3 : 1,
+      }).addTo(farmMap);
+      layer.bindTooltip(area.name);
+      layer.on("click", () => selectArea(key));
+      areaLayers[key] = layer;
+    });
+  });
 
 function terrainStyle(feature) {
   const slope = feature.properties.slope_mean_degrees;
