@@ -74,9 +74,9 @@
             <div id="farm-map" aria-label="Interactive map of example farming regions"></div>
             <div class="map-legend">
               <span><i class="legend-region"></i>Eastern Washington counties</span>
-              <span><i class="legend-coverage"></i>NASA POWER weather grid</span>
+              <span data-power-legend hidden><i class="legend-coverage"></i>NASA POWER weather grid</span>
             </div>
-            <p class="map-caption">Blue cells show approximate 0.5° × 0.625° weather-grid footprints for the four loaded samples.</p>
+            <p class="map-caption" data-power-legend hidden>Blue cells show approximate 0.5° × 0.625° weather-grid footprints for the four loaded samples.</p>
           </div>
           <aside class="area-panel" aria-live="polite">
             <h3 id="area-panel-name">Eastern Washington data</h3>
@@ -118,7 +118,7 @@
               <legend>Where is your farm?</legend>
               <p class="survey-help">Place a marker inside the Eastern Washington survey area. We will associate it with the nearest climate-data point. An address or county is optional context.</p>
               <div id="survey-map" class="survey-map" aria-label="Farm location map for Eastern Washington"></div>
-              <p class="map-caption">Click inside the dashed boundary to place your farm. Blue cells show the samples’ approximate weather-grid footprints.</p>
+              <p class="map-caption">Click inside the dashed boundary to place your farm.<span data-power-legend hidden> Blue cells show the samples’ approximate weather-grid footprints.</span></p>
               <p id="survey-location-status" class="survey-feedback" aria-live="polite">No farm point selected yet.</p>
               <label for="farm-location">Address or county (optional)</label>
               <input id="farm-location" name="location" type="text" placeholder="Example: Whitman County, WA" />

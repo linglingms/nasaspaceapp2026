@@ -466,23 +466,29 @@ function createBasemaps() {
   };
 }
 
-function addBasemaps(map) {
+function addBasemaps(map, coverageLayer) {
   const basemaps = createBasemaps();
   basemaps.Map.addTo(map);
-  L.control.layers(basemaps, null, { position: "topright", collapsed: false }).addTo(map);
+  L.control.layers(basemaps, { "NASA POWER": coverageLayer }, { position: "topright", collapsed: false }).addTo(map);
+  map.on("overlayadd overlayremove", (event) => {
+    if (event.layer !== coverageLayer) return;
+    map.getContainer().parentElement.querySelectorAll("[data-power-legend]").forEach((element) => {
+      element.hidden = !map.hasLayer(coverageLayer);
+    });
+  });
   map.createPane("powerCoverage");
   map.getPane("powerCoverage").style.zIndex = 450;
   return basemaps;
 }
 
-powerPointsLayer = L.layerGroup().addTo(farmMap);
-addBasemaps(farmMap);
+powerPointsLayer = L.layerGroup();
+addBasemaps(farmMap, powerPointsLayer);
 L.control.scale({ imperial: true, metric: true, position: "bottomleft" }).addTo(farmMap);
 
 surveyMap = L.map("survey-map", { scrollWheelZoom: false }).fitBounds(easternWashingtonBounds);
 surveyMap.setMaxBounds(easternWashingtonBounds);
-const surveyPointsLayer = L.layerGroup().addTo(surveyMap);
-addBasemaps(surveyMap);
+const surveyPointsLayer = L.layerGroup();
+addBasemaps(surveyMap, surveyPointsLayer);
 // Dim everything outside the survey boundary so the allowed area reads at a glance.
 L.polygon(
   [
