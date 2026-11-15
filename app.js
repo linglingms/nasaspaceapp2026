@@ -445,11 +445,20 @@ farmMap.on("resize", () => fitOverview());
 // Label-free basemaps keep Seattle as the only city annotation.
 function createBasemaps() {
   return {
-    Map: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
-      attribution: 'Tiles &copy; Esri, HERE, Garmin, OpenStreetMap contributors',
-      maxNativeZoom: 16,
-      maxZoom: 18,
-    }),
+    Map: L.layerGroup([
+      // Natural-color regional overview; this source ends at zoom 8.
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}", {
+        attribution: 'Tiles &copy; Esri | Source: US National Park Service',
+        maxZoom: 8,
+      }),
+      // Keep terrain detail available when zooming beyond the overview source.
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}", {
+        attribution: 'Tiles &copy; Esri, USGS, NOAA',
+        minZoom: 9,
+        maxNativeZoom: 13,
+        maxZoom: 18,
+      }),
+    ]),
     Terrain: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}", {
       attribution:
         'Tiles &copy; Esri, USGS, SRTM',
