@@ -648,7 +648,7 @@ function renderBarChart(items, valueKey, title, unit, labelKey) {
       const barHeight = (value / max) * 185;
       const x = 56 + index * ((width - 100) / items.length);
       const y = 210 - barHeight;
-      const label = item[labelKey] ?? item.feature;
+      const label = item[labelKey] || item.feature;
       return `<g><rect class="chart-bar" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4"><title>${label}: ${formatChartValue(value)} ${unit}</title></rect><text x="${x + barWidth / 2}" y="229" text-anchor="middle">${label}</text><text class="chart-bar-value" x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle">${formatChartValue(value)}</text></g>`;
     })
     .join("");
@@ -671,13 +671,13 @@ function renderStaticModelCharts(data) {
         const barHeight = (value / max) * 185;
         const x = 56 + index * ((width - 100) / items.length);
         const y = 210 - barHeight;
-        const label = item[labelKey] ?? item.feature;
+        const label = item[labelKey] || item.feature;
         return `<g><rect class="chart-bar" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4"><title>${label}: ${formatChartValue(value)} ${unit}</title></rect><text x="${x + barWidth / 2}" y="229" text-anchor="middle">${label}</text><text class="chart-bar-value" x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle">${formatChartValue(value)}</text></g>`;
       })
       .join("");
     target.innerHTML = `<svg class="analytics-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}"><line class="axis-line" x1="45" y1="210" x2="${width - 24}" y2="210"></line>${bars}</svg>`;
   };
-  renderInto(analyticsElements.zonesChart, data.zones, "mean_stress_risk", "Environmental zones", "score", "label");
+  renderInto(analyticsElements.zonesChart, data.zones, "mean_stress_risk", "Environmental zones", "score", "zone");
   renderInto(analyticsElements.featureChart, data.feature_importance, "importance", "Random Forest feature importance", "importance", "feature");
 }
 
@@ -761,7 +761,7 @@ function renderAnalyticsChart(viewKey = analyticsElements.chartSelector.value) {
     analyticsElements.chartTitle.textContent = "Environmental zones";
     analyticsElements.chartDescription.textContent =
       "K-Means climate regimes derived from the notebook analysis.";
-    renderBarChart(powerData.zones, "mean_stress_risk", "Environmental zones", "score", "label");
+    renderBarChart(powerData.zones, "mean_stress_risk", "Environmental zones", "score", "zone");
   } else if (viewKey === "feature-importance") {
     analyticsElements.chartTitle.textContent = "Random Forest feature importance";
     analyticsElements.chartDescription.textContent =
