@@ -262,6 +262,30 @@
             <p id="dataset-note" class="data-footnote">The web app uses a compact derived file from the executed NASA POWER notebook.</p>
           </article>
         </div>
+        <div class="model-charts-grid">
+          <article class="data-card model-chart-card">
+            <span class="stat-label">Climate pattern discovery</span>
+            <h3>Environmental zones</h3>
+            <p class="chart-explanation">
+              Each bar shows the average stress-risk proxy for a K-Means climate
+              regime. The model groups observations with similar temperature,
+              humidity, wind, sunlight, and precipitation; these are exploratory
+              weather patterns, not official geographic zones.
+            </p>
+            <div id="environmental-zones-chart" class="analytics-chart" role="img" aria-label="Environmental zone stress-risk chart"></div>
+          </article>
+          <article class="data-card model-chart-card">
+            <span class="stat-label">Predictive model interpretation</span>
+            <h3>Random Forest feature importance</h3>
+            <p class="chart-explanation">
+              Taller bars indicate features the exploratory Random Forest used
+              more often to separate lower- and higher-risk next-day weather
+              proxies. Importance is not causation, and it does not prove that a
+              feature directly causes crop stress.
+            </p>
+            <div id="feature-importance-chart" class="analytics-chart" role="img" aria-label="Random Forest feature importance chart"></div>
+          </article>
+        </div>
         <div class="diagnostics-panel" id="model-diagnostics" aria-live="polite">
           <div class="diagnostics-heading">
             <div>
