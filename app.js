@@ -394,7 +394,7 @@ const areas = {
   "eastern-washington": {
     name: "Eastern Washington data",
     description:
-      "NASA POWER sample data covering Eastern Washington from 45.5–48.5°N and 122.5–117.5°W.",
+      "Four NASA POWER samples from 45.5–48.5°N along 117.5°W provide the project's regional climate context.",
     crops: "Wheat analysis dataset",
     terrain: "Dataset points · Coordinates loaded from NASA POWER export",
     focus: "Climate analytics",
@@ -423,21 +423,37 @@ let powerData = null;
 let commodityData = null;
 let powerPointsLayer;
 let regionBounds = null;
+let powerCoverageBounds = null;
 const farmMap = L.map("farm-map", { scrollWheelZoom: false }).setView(
   areas[selectedAreaKey].coordinates,
   areas[selectedAreaKey].zoom,
 );
 
-// Basemaps: a quiet cartographic base by default, with a satellite option.
+function fitOverview(animate = false) {
+  const bounds = L.latLngBounds([]);
+  if (regionBounds) bounds.extend(regionBounds);
+  if (powerCoverageBounds) bounds.extend(powerCoverageBounds);
+  if (!bounds.isValid()) return;
+  farmMap[animate ? "flyToBounds" : "fitBounds"](bounds, {
+    paddingTopLeft: [24, 64],
+    paddingBottomRight: [24, 64],
+    duration: 0.7,
+  });
+}
+farmMap.on("resize", () => fitOverview());
+
+// Label-free basemaps keep Seattle as the only city annotation.
 function createBasemaps() {
   return {
-    Map: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    Map: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}", {
+      attribution: 'Tiles &copy; Esri, HERE, Garmin, OpenStreetMap contributors',
+      maxNativeZoom: 16,
       maxZoom: 18,
     }),
-    Terrain: L.tileLayer("https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png", {
+    Terrain: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}", {
       attribution:
-        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>, SRTM | &copy; <a href="https://opentopomap.org">OpenTopoMap</a>',
+        'Tiles &copy; Esri, USGS, SRTM',
+      maxNativeZoom: 13,
       maxZoom: 17,
     }),
     Satellite: L.tileLayer(
@@ -450,21 +466,23 @@ function createBasemaps() {
   };
 }
 
-function addBasemaps(map, overlays) {
+function addBasemaps(map) {
   const basemaps = createBasemaps();
   basemaps.Map.addTo(map);
-  L.control.layers(basemaps, overlays, { position: "topright", collapsed: false }).addTo(map);
+  L.control.layers(basemaps, null, { position: "topright", collapsed: false }).addTo(map);
+  map.createPane("powerCoverage");
+  map.getPane("powerCoverage").style.zIndex = 450;
   return basemaps;
 }
 
-powerPointsLayer = L.layerGroup();
-addBasemaps(farmMap, { "NASA POWER samples": powerPointsLayer });
+powerPointsLayer = L.layerGroup().addTo(farmMap);
+addBasemaps(farmMap);
 L.control.scale({ imperial: true, metric: true, position: "bottomleft" }).addTo(farmMap);
 
 surveyMap = L.map("survey-map", { scrollWheelZoom: false }).fitBounds(easternWashingtonBounds);
 surveyMap.setMaxBounds(easternWashingtonBounds);
-const surveyPointsLayer = L.layerGroup();
-addBasemaps(surveyMap, { "NASA POWER samples": surveyPointsLayer });
+const surveyPointsLayer = L.layerGroup().addTo(surveyMap);
+addBasemaps(surveyMap);
 // Dim everything outside the survey boundary so the allowed area reads at a glance.
 L.polygon(
   [
@@ -853,40 +871,42 @@ function loadPowerData() {
     .then((data) => {
       renderPowerData(data);
       powerPointsLayer.clearLayers();
+      surveyPointsLayer.clearLayers();
       const bounds = [];
       data.points.forEach((point) => {
-        const marker = L.circleMarker([point.lat, point.lon], {
-          color: "#12543a",
-          fillColor: "#ffffff",
-          fillOpacity: 1,
-          radius: 5,
-          weight: 2,
-          className: "power-point",
-        }).bindTooltip(`NASA POWER point · ${powerPointLabel(point)}`, {
-          direction: "top",
-          offset: [0, -6],
-          className: "map-label",
-        }).bindPopup(
-          `<strong>NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}<br>${point.date_start} to ${point.date_end}`,
-        );
-        marker.addTo(powerPointsLayer);
-        L.circleMarker([point.lat, point.lon], {
-          color: "#12543a",
-          fillColor: "#ffffff",
-          fillOpacity: 1,
-          radius: 4.5,
-          weight: 2,
-          className: "power-point",
-        }).bindPopup(
-          `<strong>Nearest NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}`,
-        ).bindTooltip(`NASA POWER sample · ${powerPointLabel(point)}`, {
-          direction: "top",
-          offset: [0, -6],
-          className: "map-label",
-        }).addTo(surveyPointsLayer);
-        bounds.push([point.lat, point.lon]);
+        // Nominal weather-grid footprints, not exact source cell boundaries:
+        // the export contains sample coordinates but no grid-boundary metadata.
+        // NASA POWER weather resolution: https://power.larc.nasa.gov/docs/services/
+        // Solar parameters have a different resolution and are not mapped here.
+        const cellBounds = [
+          [point.lat - 0.25, point.lon - 0.3125],
+          [point.lat + 0.25, point.lon + 0.3125],
+        ];
+        [powerPointsLayer, surveyPointsLayer].forEach((layer) => {
+          const cell = L.rectangle(cellBounds, {
+            pane: "powerCoverage",
+            color: "#397f99",
+            weight: 1.5,
+            opacity: 0.8,
+            fillColor: "#78b9cf",
+            fillOpacity: 0.3,
+            className: "power-coverage",
+          }).bindTooltip(`NASA POWER weather sample · ${powerPointLabel(point)}`, {
+            sticky: true,
+            className: "map-label",
+          }).addTo(layer);
+          cell.on("mouseover", () => cell.setStyle({ fillOpacity: 0.48 }));
+          cell.on("mouseout", () => cell.setStyle({ fillOpacity: 0.3 }));
+          if (layer === powerPointsLayer) {
+            cell.bindPopup(`<strong>NASA POWER weather coverage</strong><br>Approximate grid: 0.5° × 0.625°<br>Sample: ${powerPointLabel(point)}<br>${point.observations.toLocaleString()} daily records<br>${point.date_start} to ${point.date_end}`);
+          }
+        });
+        bounds.push(...cellBounds);
       });
-      if (!regionBounds && bounds.length) farmMap.fitBounds(bounds, { padding: [35, 35] });
+      if (bounds.length) {
+        powerCoverageBounds = L.latLngBounds(bounds);
+        fitOverview();
+      }
       areaElements.status.textContent = `${data.points.length} NASA POWER sample locations loaded.`;
     })
     .catch((error) => {
@@ -920,7 +940,7 @@ function selectArea(key, moveMap = true) {
   });
   if (key === "eastern-washington") loadPowerData();
   if (moveMap) {
-    if (regionBounds) farmMap.flyToBounds(regionBounds, { padding: [24, 24], duration: 0.7 });
+    if (regionBounds || powerCoverageBounds) fitOverview(true);
     else farmMap.flyTo(area.coordinates, area.zoom, { duration: 0.7 });
   }
 }
@@ -938,20 +958,10 @@ const contextPlaceLabels = [
 ];
 
 const contextCities = [
-  { name: "Spokane", latlng: [47.658, -117.426], side: "left" },
-  { name: "Yakima", minor: true, latlng: [46.602, -120.506] },
-  { name: "Tri-Cities", latlng: [46.211, -119.137] },
-  { name: "Wenatchee", minor: true, latlng: [47.423, -120.31] },
-  { name: "Moses Lake", minor: true, latlng: [47.13, -119.278] },
-  { name: "Walla Walla", minor: true, latlng: [46.065, -118.343] },
-  { name: "Ellensburg", minor: true, latlng: [46.997, -120.548], side: "left" },
   { name: "Seattle", latlng: [47.606, -122.332] },
-  { name: "Portland", latlng: [45.515, -122.679] },
-  { name: "Boise", latlng: [43.615, -116.202] },
-  { name: "Missoula", latlng: [46.872, -113.994] },
 ];
 
-function addRegionContext(map, contextData, { placeLabels, minorCityZoom }) {
+function addRegionContext(map, contextData, { placeLabels }) {
   map.createPane("context");
   map.getPane("context").style.zIndex = 350;
   map.getPane("context").style.pointerEvents = "none";
@@ -977,15 +987,7 @@ function addRegionContext(map, contextData, { placeLabels, minorCityZoom }) {
         iconSize: [0, 0],
       }),
     });
-  L.layerGroup(contextCities.filter((city) => !city.minor).map(cityMarker)).addTo(map);
-  // Smaller towns sit inside the county-labelled area, so they appear once zoomed in.
-  const minorCities = L.layerGroup(contextCities.filter((city) => city.minor).map(cityMarker));
-  const updateMinorCities = () => {
-    if (map.getZoom() >= minorCityZoom) minorCities.addTo(map);
-    else minorCities.remove();
-  };
-  map.on("zoomend", updateMinorCities);
-  updateMinorCities();
+  L.layerGroup(contextCities.map(cityMarker)).addTo(map);
   if (placeLabels) {
     contextPlaceLabels.forEach((place) =>
       L.marker(place.latlng, {
@@ -1003,8 +1005,8 @@ fetch("data/region-context.geojson")
     return response.json();
   })
   .then((contextData) => {
-    addRegionContext(farmMap, contextData, { placeLabels: true, minorCityZoom: 7 });
-    addRegionContext(surveyMap, contextData, { placeLabels: false, minorCityZoom: 0 });
+    addRegionContext(farmMap, contextData, { placeLabels: true });
+    addRegionContext(surveyMap, contextData, { placeLabels: false });
   })
   .catch((error) => console.info("Map context layer unavailable.", error));
 
@@ -1087,7 +1089,7 @@ fetch("data/eastern-washington.geojson")
     layer.bringToBack();
     areaLayers[key] = layer;
     regionBounds = layer.getBounds();
-    farmMap.fitBounds(regionBounds, { padding: [24, 24] });
+    fitOverview();
   })
   .catch((error) => {
     console.info("Region boundary unavailable; using the area circle.", error);
