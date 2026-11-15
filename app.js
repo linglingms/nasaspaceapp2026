@@ -924,6 +924,52 @@ function selectArea(key, moveMap = true) {
   }
 }
 
+// Area-weighted centroid of a feature's largest outer ring, as [lat, lng].
+function polygonLabelPoint(geometry) {
+  const polygons = geometry.type === "MultiPolygon" ? geometry.coordinates : [geometry.coordinates];
+  let best = null;
+  polygons.forEach((polygon) => {
+    const ring = polygon[0];
+    let area = 0;
+    let x = 0;
+    let y = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const cross = ring[j][0] * ring[i][1] - ring[i][0] * ring[j][1];
+      area += cross;
+      x += (ring[j][0] + ring[i][0]) * cross;
+      y += (ring[j][1] + ring[i][1]) * cross;
+    }
+    if (!best || Math.abs(area) > Math.abs(best.area)) best = { area, lng: x / (3 * area), lat: y / (3 * area) };
+  });
+  return [best.lat, best.lng];
+}
+
+// County names. At the overview zoom only well-spaced large counties are labeled;
+// every county is labeled once the map is zoomed in.
+const overviewCountyLabels = new Set(["Okanogan", "Stevens", "Chelan", "Grant", "Lincoln", "Kittitas", "Yakima", "Adams", "Whitman", "Klickitat", "Franklin"]);
+
+function addCountyLabels(map, counties, overviewMinWidth) {
+  const makeLabel = (county) =>
+    L.marker(polygonLabelPoint(county.geometry), {
+      interactive: false,
+      keyboard: false,
+      icon: L.divIcon({ className: "county-label", html: `<span>${county.properties.name}</span>`, iconSize: [0, 0] }),
+    });
+  const all = L.layerGroup(counties.map(makeLabel));
+  const overview = L.layerGroup(counties.filter((county) => overviewCountyLabels.has(county.properties.name)).map(makeLabel));
+  const update = () => {
+    const zoom = map.getZoom();
+    const showAll = zoom >= 7;
+    const showOverview = !showAll && zoom >= 6 && map.getSize().x >= overviewMinWidth;
+    if (showAll) all.addTo(map);
+    else all.remove();
+    if (showOverview) overview.addTo(map);
+    else overview.remove();
+  };
+  map.on("zoomend resize", update);
+  update();
+}
+
 // Eastern Washington drawn from its real county boundaries (US Census, via us-atlas).
 fetch("data/eastern-washington.geojson")
   .then((response) => {
@@ -933,10 +979,16 @@ fetch("data/eastern-washington.geojson")
   .then((regionData) => {
     const counties = regionData.features.filter((feature) => feature.properties.kind === "county");
     const region = regionData.features.find((feature) => feature.properties.kind === "region");
-    L.geoJSON(counties, {
-      interactive: false,
-      style: { color: "#1d7a50", weight: 0.8, opacity: 0.45, fill: false },
-    }).addTo(farmMap);
+    [
+      [farmMap, 560],
+      [surveyMap, Infinity],
+    ].forEach(([map, overviewMinWidth]) => {
+      L.geoJSON(counties, {
+        interactive: false,
+        style: { color: "#1d7a50", weight: 0.8, opacity: 0.55, fill: false },
+      }).addTo(map);
+      addCountyLabels(map, counties, overviewMinWidth);
+    });
     const key = region.properties.area_key;
     const layer = L.geoJSON(region, {
       style: {

@@ -376,3 +376,5 @@ input::placeholder { color: var(--muted); opacity: 1; }
   .map-card .leaflet-top.leaflet-right, .survey-map .leaflet-top.leaflet-right { top: auto; bottom: 22px; }
   .map-label { display: none; }
 }
+.county-label { pointer-events: none; }
+.county-label span { position: absolute; transform: translate(-50%, -50%); white-space: nowrap; color: #17352b; font-size: .68rem; font-weight: 700; letter-spacing: .02em; opacity: .8; text-shadow: 0 0 3px #fff, 0 0 3px #fff, 0 0 2px #fff; }
