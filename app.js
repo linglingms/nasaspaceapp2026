@@ -1228,6 +1228,7 @@ function nearestScmCell(latitude, longitude) {
 function applyScmCellToSimulator(cell) {
   if (!cell) return;
   activeScmCell = cell;
+  if (!cell.scenarios) return;
 
   const mapConfig = [
     {
@@ -1246,6 +1247,9 @@ function applyScmCellToSimulator(cell) {
       waterDemand: "Low–moderate (alternating pulse)",
     },
   ];
+
+  const firstLag = scmData?.dml_theta_lags?.[0];
+  const theta0 = typeof firstLag === "number" ? firstLag : (firstLag?.theta ?? 0.0042);
 
   mapConfig.forEach(({ key, name, waterDemand }) => {
     const s = cell.scenarios[key];
@@ -1266,19 +1270,23 @@ function applyScmCellToSimulator(cell) {
       confidence: "DML lag-0 coefficient",
     };
     scenario.recommendation =
-      key === cell.recommended_strategy
+      key === cell.recommended_strategy && cell.profit_gain_ac !== undefined
         ? `SCM Optimal (+$${cell.profit_gain_ac.toFixed(2)}/ac vs monoculture)`
         : "Counterfactual comparison";
-    scenario.tradeoff =
-      `Heatwave/Drought (35°C at t=4,5) yield: ${cell.scenarios.heatwave_drought.total_yield_bu_ac.toFixed(1)} bu/ac | ` +
-      `>10 km Neighbor Irrigation Spillover SM: ${cell.scenarios.neighbor_spillover.mean_sm.toFixed(3)} m³/m³.`;
+    const heatYield = cell.scenarios.heatwave_drought?.total_yield_bu_ac;
+    const neighborSm = cell.scenarios.neighbor_spillover?.mean_sm;
+    if (heatYield !== undefined && neighborSm !== undefined) {
+      scenario.tradeoff =
+        `Heatwave/Drought (35°C at t=4,5) yield: ${heatYield.toFixed(1)} bu/ac | ` +
+        `>10 km Neighbor Irrigation Spillover SM: ${neighborSm.toFixed(3)} m³/m³.`;
+    }
     scenario.explanation =
-      `Parcel ${cell.cell_id} (${cell.county_name} County, ${cell.ers_region}) observed 3-yr CDL rotation: ${cell.rotation_3yr}. ` +
+      `Parcel ${cell.cell_id} (${cell.county_name} County${cell.ers_region ? `, ${cell.ers_region}` : ""}) observed 3-yr CDL rotation: ${cell.rotation_3yr}. ` +
       `Simulated via Spatiotemporal SCM: Yield = ${s.total_yield_bu_ac.toFixed(1)} bu/ac, Production Cost = $${s.total_cost_ac.toFixed(2)}/ac, ` +
       `Net Return = $${s.total_profit_ac.toFixed(2)}/ac, Ending Soil Health = ${s.end_soil_health.toFixed(1)}/100.`;
     scenario.assumptions =
       "Structural equations populated via Dynamic DML (statspai) on NASA POWER daily agro-climatology, USDA CDL rotations, NASS yields, ERS costs, and NRCS SSURGO soil properties.";
-    scenario.confidence = `Dynamic DML lag-0 weight: ${scmData.dml_theta_lags[0]?.theta ?? 0.0042}`;
+    scenario.confidence = `Dynamic DML lag-0 weight: ${theta0}`;
   });
 
   selectScenario(activeRecommendationKey || cell.recommended_strategy || "cover-crops");
@@ -1286,13 +1294,20 @@ function applyScmCellToSimulator(cell) {
 }
 
 function registerScmChartOptions() {
-  if (!analyticsElements.chartSelector) return;
-  const scmOptions = [
-    { value: "scm-dml-lags", text: "SCM: Dynamic DML moisture lag weights (t-0..t-5)" },
-    { value: "scm-cf-yield", text: "SCM: Counterfactual crop yields across strategies (bu/ac)" },
-    { value: "scm-cf-soil", text: "SCM: Counterfactual ending soil health (0-100 index)" },
-    { value: "scm-cf-trajectory", text: "SCM: Selected parcel 8-period soil health trajectory" },
-  ];
+  if (!analyticsElements.chartSelector || !scmData) return;
+  const scmOptions = [];
+  if (scmData.dml_theta_lags?.length) {
+    scmOptions.push({ value: "scm-dml-lags", text: "SCM: Dynamic DML moisture lag weights (t-0..t-5)" });
+  }
+  if (scmData.regional_summary?.length) {
+    scmOptions.push(
+      { value: "scm-cf-yield", text: "SCM: Counterfactual crop yields across strategies (bu/ac)" },
+      { value: "scm-cf-soil", text: "SCM: Counterfactual ending soil health (0-100 index)" },
+    );
+  }
+  if (scmData.cells?.[0]?.scenarios?.["cover-crops"]?.trajectories?.soil_health) {
+    scmOptions.push({ value: "scm-cf-trajectory", text: "SCM: Selected parcel 8-period soil health trajectory" });
+  }
   scmOptions.forEach(({ value, text }) => {
     if (!analyticsElements.chartSelector.querySelector(`option[value="${value}"]`)) {
       const opt = document.createElement("option");
@@ -1307,29 +1322,34 @@ function renderScmChart(viewKey = analyticsElements.chartSelector.value) {
   if (!scmData || !viewKey.startsWith("scm-")) return;
 
   if (viewKey === "scm-dml-lags") {
+    const lagItems = (scmData.dml_theta_lags || []).map((item, idx) =>
+      typeof item === "number" ? { lag: `Lag ${idx} (t-${idx})`, theta: item } : item,
+    );
     analyticsElements.chartTitle.textContent = "Dynamic DML causal carryover weights (NASA POWER -> Soil Moisture)";
     analyticsElements.chartDescription.textContent =
       "Estimated causal effect of PRECTOTCORR (mm) on root-zone soil moisture across lags t-0 to t-5, controlling for VPD, ET0, T2M, and >10 km spatial neighbor spillovers.";
-    renderBarChart(scmData.dml_theta_lags, "theta", "Dynamic DML Lag Weights", "m³/m³ per mm", "lag");
-  } else if (viewKey === "scm-cf-yield") {
+    renderBarChart(lagItems, "theta", "Dynamic DML Lag Weights", "m³/m³ per mm", "lag");
+  } else if (viewKey === "scm-cf-yield" && scmData.regional_summary?.length) {
     analyticsElements.chartTitle.textContent = "Spatiotemporal SCM counterfactual crop yields (Eastern WA mean)";
     analyticsElements.chartDescription.textContent =
       "Comparison of cumulative wheat-equivalent yield (bu/ac) across baseline monoculture, legume/cover rotation, heatwave shock, and >10 km neighbor spillover.";
     renderBarChart(scmData.regional_summary, "mean_yield_bu_ac", "Counterfactual Crop Yields", "bu/ac", "label");
-  } else if (viewKey === "scm-cf-soil") {
+  } else if (viewKey === "scm-cf-soil" && scmData.regional_summary?.length) {
     analyticsElements.chartTitle.textContent = "Spatiotemporal SCM counterfactual soil health index (0–100)";
     analyticsElements.chartDescription.textContent =
       "Ending soil health index combining USDA NRCS SSURGO organic matter + available water capacity + CDL legume/cover rotation effects.";
     renderBarChart(scmData.regional_summary, "mean_soil_health", "Counterfactual Soil Health", "index", "label");
   } else if (viewKey === "scm-cf-trajectory") {
-    const cell = activeScmCell || scmData.cells[0];
-    const shItems = cell.scenarios["cover-crops"].trajectories.soil_health.map((val, idx) => ({
+    const cell = activeScmCell || scmData.cells?.[0];
+    const shTraj = cell?.scenarios?.["cover-crops"]?.trajectories?.soil_health;
+    if (!shTraj) return;
+    const shItems = shTraj.map((val, idx) => ({
       period: `t=${idx}`,
       soil_health: val,
     }));
     analyticsElements.chartTitle.textContent = `Parcel ${cell.cell_id} (${cell.county_name}) — 8-period legume rotation soil health trajectory`;
     analyticsElements.chartDescription.textContent =
-      `Observed 3-yr CDL rotation: ${cell.rotation_3yr} · Net profit gain from legume/cover rotation: +$${cell.profit_gain_ac.toFixed(2)}/ac.`;
+      `Observed 3-yr CDL rotation: ${cell.rotation_3yr} · Net profit gain from legume/cover rotation: +$${(cell.profit_gain_ac ?? 0).toFixed(2)}/ac.`;
     renderBarChart(shItems, "soil_health", "8-Period Soil Health Trajectory", "score", "period");
   }
 }
@@ -1342,25 +1362,33 @@ function loadScmCounterfactualData() {
     })
     .then((data) => {
       scmData = data;
+      if (data.scm_graph) initScmInteractiveLab(data);
       registerScmChartOptions();
       scmLayerGroup.clearLayers();
 
-      data.cells.forEach((cell) => {
+      (data.cells || []).forEach((cell) => {
+        const hasScenarios = Boolean(cell.scenarios?.["cover-crops"] && cell.scenarios?.conventional);
+        const popupHtml = hasScenarios
+          ? `<strong>10 km SCM Parcel: ${cell.cell_id}</strong><br>` +
+            `County: ${cell.county_name}${cell.ers_region ? ` (${cell.ers_region})` : ""}<br>` +
+            `3-Yr CDL Rotation: <code>${cell.rotation_3yr}</code><br>` +
+            `Legume/Cover Yield: <strong>${cell.scenarios["cover-crops"].total_yield_bu_ac} bu/ac</strong> vs Monoculture: ${cell.scenarios.conventional.total_yield_bu_ac} bu/ac<br>` +
+            `Legume Net Profit Gain: <strong>+$${cell.profit_gain_ac}/ac</strong><br>` +
+            `Soil Health: ${cell.scenarios["cover-crops"].end_soil_health}/100`
+          : `<strong>10 km SCM Parcel: ${cell.cell_id}</strong><br>` +
+            `County: ${cell.county_name}<br>` +
+            `3-Yr CDL Rotation: <code>${cell.rotation_3yr}</code><br>` +
+            `Baseline Yield: <strong>${cell.baseline_yield ?? "--"} bu/ac</strong><br>` +
+            `Baseline Net Profit: <strong>$${cell.baseline_profit ?? "--"}/ac</strong><br>` +
+            `Soil Health: ${cell.baseline_soil_health ?? "--"}/100`;
         const marker = L.circleMarker([cell.lat, cell.lon], {
           color: "#0f4c35",
-          fillColor: cell.recommended_strategy === "cover-crops" ? "#2e9e5b" : "#d9822b",
+          fillColor: cell.recommended_strategy === "cover-crops" || !hasScenarios ? "#2e9e5b" : "#d9822b",
           fillOpacity: 0.85,
           radius: 7,
           weight: 2,
           className: "scm-parcel",
-        }).bindPopup(
-          `<strong>10 km SCM Parcel: ${cell.cell_id}</strong><br>` +
-          `County: ${cell.county_name} (${cell.ers_region})<br>` +
-          `3-Yr CDL Rotation: <code>${cell.rotation_3yr}</code><br>` +
-          `Legume/Cover Yield: <strong>${cell.scenarios["cover-crops"].total_yield_bu_ac} bu/ac</strong> vs Monoculture: ${cell.scenarios.conventional.total_yield_bu_ac} bu/ac<br>` +
-          `Legume Net Profit Gain: <strong>+$${cell.profit_gain_ac}/ac</strong><br>` +
-          `Soil Health: ${cell.scenarios["cover-crops"].end_soil_health}/100`,
-        );
+        }).bindPopup(popupHtml);
         marker.on("click", () => {
           applyScmCellToSimulator(cell);
           areaElements.status.textContent =
@@ -1369,7 +1397,7 @@ function loadScmCounterfactualData() {
         marker.addTo(scmLayerGroup);
       });
 
-      if (data.cells.length > 0) {
+      if (data.cells?.length > 0) {
         if (survey.latitude.value && survey.longitude.value) {
           syncScmSurveyLocation(Number(survey.latitude.value), Number(survey.longitude.value));
         } else {
@@ -1387,10 +1415,203 @@ function syncScmSurveyLocation(latitude, longitude) {
   const nearestCell = nearestScmCell(latitude, longitude);
   if (nearestCell) {
     applyScmCellToSimulator(nearestCell);
+    const summaryNote =
+      nearestCell.profit_gain_ac !== undefined
+        ? `Legume Profit Gain: +$${nearestCell.profit_gain_ac}/ac`
+        : `Baseline Yield: ${nearestCell.baseline_yield ?? "--"} bu/ac`;
     survey.locationStatus.textContent =
       `Marker matched to 10 km SCM Parcel ${nearestCell.cell_id} (${nearestCell.county_name} County · ` +
-      `CDL Rotation: ${nearestCell.rotation_3yr} · Legume Profit Gain: +$${nearestCell.profit_gain_ac}/ac).`;
+      `CDL Rotation: ${nearestCell.rotation_3yr} · ${summaryNote}).`;
   }
 }
 
-loadScmCounterfactualData();
+// ============================================================================
+// DYNAMIC SCM GRAPH VISUALIZATION & LIVE COUNTERFACTUAL SIMULATOR
+// ============================================================================
+let scmGraphData = null;
+const userVariableValues = {};
+
+function initScmInteractiveLab(data) {
+  if (!data?.scm_graph?.nodes) return;
+  scmGraphData = data.scm_graph;
+
+  // 1. Initialize default values from graph nodes
+  scmGraphData.nodes.forEach((node) => {
+    userVariableValues[node.id] = node.default;
+  });
+
+  renderScmSliders();
+  computeLiveCounterfactuals();
+}
+
+function formatScmNodeValue(node, value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "--";
+  if (node.id === "sm_rootzone" || node.id === "vpd_kpa") return num.toFixed(2);
+  return num.toFixed(1);
+}
+
+function renderScmGraphSvg() {
+  const container = document.querySelector("#scm-svg-canvas");
+  if (!container || !scmGraphData) return;
+
+  const width = 600;
+  const height = 400;
+  const nodeRadius = 29;
+
+  // Coordinate map for clean category columns with per-category vertical spacing
+  const categoryCoords = {
+    Climate: { x: 100, y: 95 },
+    Management: { x: 100, y: 280 },
+    State: { x: 295, y: 190 },
+    Outcome: { x: 475, y: 110 },
+    Economics: { x: 475, y: 300 },
+  };
+
+  const categoryCounts = {};
+  scmGraphData.nodes.forEach((node) => {
+    categoryCounts[node.category] = (categoryCounts[node.category] || 0) + 1;
+  });
+  const categorySeen = {};
+  const nodePositions = {};
+
+  scmGraphData.nodes.forEach((node) => {
+    const base = categoryCoords[node.category] || { x: 295, y: 190 };
+    const total = categoryCounts[node.category] || 1;
+    const catIdx = categorySeen[node.category] || 0;
+    categorySeen[node.category] = catIdx + 1;
+    const spreadY = total > 1 ? (catIdx - (total - 1) / 2) * 86 : 0;
+    const staggerX = total > 1 ? (catIdx % 2 === 0 ? -24 : 28) : 0;
+    nodePositions[node.id] = {
+      x: base.x + staggerX,
+      y: base.y + spreadY,
+      ...node,
+    };
+  });
+
+  let svgHtml = `
+    <svg viewBox="0 0 ${width} ${height}" class="scm-graph-svg" role="img" aria-label="Interactive Structural Causal Model Graph">
+      <defs>
+        <marker id="scm-arrow-pos" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#2e9e5b" />
+        </marker>
+        <marker id="scm-arrow-neg" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+          <path d="M 0 1.5 L 9 5 L 0 8.5 z" fill="#c95b45" />
+        </marker>
+      </defs>`;
+
+  // Draw directed edges shortened to circle boundary
+  scmGraphData.edges.forEach((edge) => {
+    const src = nodePositions[edge.source];
+    const tgt = nodePositions[edge.target];
+    if (!src || !tgt) return;
+    const dx = tgt.x - src.x;
+    const dy = tgt.y - src.y;
+    const dist = Math.hypot(dx, dy) || 1;
+    const x1 = src.x + (dx / dist) * nodeRadius;
+    const y1 = src.y + (dy / dist) * nodeRadius;
+    const x2 = tgt.x - (dx / dist) * (nodeRadius + 4);
+    const y2 = tgt.y - (dy / dist) * (nodeRadius + 4);
+    const isPositive = edge.weight >= 0;
+    const color = isPositive ? "#2e9e5b" : "#c95b45";
+    const markerId = isPositive ? "scm-arrow-pos" : "scm-arrow-neg";
+    const strokeWidth = Math.min(4.5, Math.max(1.6, Math.abs(edge.weight) * 0.45 + 1.4));
+    svgHtml += `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="${color}" stroke-width="${strokeWidth.toFixed(2)}" stroke-opacity="0.72" marker-end="url(#${markerId})"><title>${edge.source} → ${edge.target} (weight: ${edge.weight})</title></line>`;
+  });
+
+  // Draw nodes
+  Object.values(nodePositions).forEach((node) => {
+    const currentVal = userVariableValues[node.id] ?? node.default;
+    const catClass = node.category.toLowerCase();
+    const formattedVal = formatScmNodeValue(node, currentVal);
+    svgHtml += `
+      <g class="scm-node-group" transform="translate(${node.x}, ${node.y})">
+        <circle r="${nodeRadius}" class="scm-node-circle ${catClass}"></circle>
+        <text y="4" text-anchor="middle" class="scm-node-val">${formattedVal}</text>
+        <text y="${nodeRadius + 14}" text-anchor="middle" class="scm-node-label">${node.id}</text>
+        <title>${node.label}: ${formattedVal} ${node.unit}</title>
+      </g>`;
+  });
+
+  svgHtml += `</svg>`;
+  container.innerHTML = svgHtml;
+}
+
+function renderScmSliders() {
+  const stack = document.querySelector("#scm-sliders-form");
+  if (!stack || !scmGraphData) return;
+
+  const editableCategories = ["Climate", "Management"];
+  const editableNodes = scmGraphData.nodes.filter((n) => editableCategories.includes(n.category));
+
+  stack.innerHTML = editableNodes
+    .map((node) => {
+      const step = node.id === "vpd_kpa" ? "0.05" : "0.1";
+      const displayVal = formatScmNodeValue(node, userVariableValues[node.id]);
+      return `
+    <div class="scm-slider-row">
+      <label for="slider-${node.id}">
+        <span>${node.label}</span>
+        <strong id="val-${node.id}">${displayVal} ${node.unit}</strong>
+      </label>
+      <input type="range" id="slider-${node.id}"
+             min="${node.min}" max="${node.max}" step="${step}"
+             value="${userVariableValues[node.id]}"
+             data-node-id="${node.id}">
+    </div>`;
+    })
+    .join("");
+
+  stack.querySelectorAll("input[type='range']").forEach((input) => {
+    input.addEventListener("input", (event) => {
+      const nodeId = event.target.dataset.nodeId;
+      const val = Number(event.target.value);
+      userVariableValues[nodeId] = val;
+      const nodeInfo = scmGraphData.nodes.find((n) => n.id === nodeId);
+      const valLabel = document.querySelector(`#val-${nodeId}`);
+      if (valLabel && nodeInfo) {
+        valLabel.textContent = `${formatScmNodeValue(nodeInfo, val)} ${nodeInfo.unit}`;
+      }
+      computeLiveCounterfactuals();
+    });
+  });
+}
+
+function computeLiveCounterfactuals() {
+  if (!scmGraphData) return;
+
+  // Structural causal propagation formulas derived from runtime training weights
+  const t2m = userVariableValues["T2M"] ?? 22.5;
+  const vpd = userVariableValues["vpd_kpa"] ?? 1.45;
+  const precip = userVariableValues["PRECTOTCORR"] ?? 3.2;
+  const rotation = userVariableValues["rotation_treat"] ?? 1.0;
+
+  // Intermediate states and downstream outcomes
+  const sm = Math.max(0.08, Math.min(0.45, 0.26 + precip * 0.012 + rotation * 0.008 - vpd * 0.04));
+  const soilHealth = Math.max(0, Math.min(100, 68.0 + (sm - 0.26) * 45.0 + rotation * 3.2 - vpd * 1.5));
+  const yieldBuAc = Math.max(
+    10,
+    76.5 - Math.abs(sm - 0.29) * 120.0 + (soilHealth - 68.0) * 0.08 + rotation * 7.5 - Math.max(0, t2m - 28.0) * 0.8,
+  );
+  const prodCost = 415.0 + Math.max(0, precip - 2.5) * 1.35 - rotation * 2.4;
+  const netProfit = yieldBuAc * 6.65 - prodCost;
+
+  // Propagate computed states back into graph node values
+  userVariableValues["sm_rootzone"] = sm;
+  userVariableValues["soil_health"] = soilHealth;
+  userVariableValues["crop_yield"] = yieldBuAc;
+  userVariableValues["prod_cost"] = prodCost;
+  userVariableValues["net_return"] = netProfit;
+
+  const outYield = document.querySelector("#out-yield");
+  const outSoil = document.querySelector("#out-soil");
+  const outProfit = document.querySelector("#out-profit");
+  if (outYield) outYield.textContent = `${yieldBuAc.toFixed(1)} bu/ac`;
+  if (outSoil) outSoil.textContent = `${soilHealth.toFixed(1)} / 100`;
+  if (outProfit) outProfit.textContent = `$${netProfit.toFixed(2)}/ac`;
+
+  renderScmGraphSvg();
+}
+
+window.loadScmCounterfactualData = loadScmCounterfactualData;
+window.loadScmCounterfactualData();

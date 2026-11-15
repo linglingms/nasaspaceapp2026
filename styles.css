@@ -399,3 +399,45 @@ html.intro-active .intro { position: fixed; inset: 0; z-index: 10000; display: b
 .intro-skip { position: absolute; right: clamp(16px, 3vw, 32px); bottom: clamp(16px, 3vw, 32px); padding: 8px 16px; border: 1px solid rgb(255 255 255 / 35%); border-radius: 999px; color: white; background: rgb(0 0 0 / 30%); font: inherit; font-size: .85rem; cursor: pointer; opacity: 0; transition: opacity .4s ease, background .2s ease; }
 .intro.intro-ready .intro-skip { opacity: 1; }
 .intro-skip:hover, .intro-skip:focus-visible { background: rgb(255 255 255 / 16%); }
+
+/* SCM Interactive Graph & Live Counterfactual Lab */
+#scm-interactive-lab .section-description { max-width: 72ch; color: var(--muted); margin-bottom: 24px; }
+.scm-lab-grid { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 0.9fr); gap: 24px; align-items: stretch; }
+.scm-graph-container,
+.scm-controls-container { padding: 24px; border: 1px solid var(--line); border-radius: 16px; background: white; box-shadow: 0 12px 32px rgb(23 53 43 / 5%); }
+.scm-graph-container h3,
+.scm-controls-container h3 { margin: 0 0 16px; font-size: 1.15rem; }
+.scm-canvas { width: 100%; border: 1px solid var(--line); border-radius: 12px; background: #fbfdfb; overflow: hidden; }
+.scm-graph-svg { display: block; width: 100%; height: auto; }
+.scm-node-circle { stroke-width: 2.2; transition: transform .15s ease, filter .15s ease; }
+.scm-node-group { cursor: default; }
+.scm-node-group:hover .scm-node-circle { filter: brightness(0.96); }
+.scm-node-circle.climate { fill: #dff0fa; stroke: #1e5c7e; }
+.scm-node-circle.management { fill: var(--mint); stroke: var(--green); }
+.scm-node-circle.state { fill: #fff3d4; stroke: #b88218; }
+.scm-node-circle.outcome { fill: #d4eddc; stroke: var(--green-dark); }
+.scm-node-circle.economics { fill: #fdeae5; stroke: var(--coral); }
+.scm-node-val { fill: var(--ink); font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.scm-node-label { fill: var(--ink); font-size: 10px; font-weight: 600; paint-order: stroke; stroke: #fbfdfb; stroke-width: 4px; stroke-linejoin: round; }
+.scm-legend { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
+.badge { display: inline-flex; align-items: center; padding: 4px 10px; border-radius: 999px; font-size: .74rem; font-weight: 700; border: 1px solid transparent; }
+.badge.climate { color: #1e5c7e; background: #dff0fa; border-color: #b7daf0; }
+.badge.management { color: var(--green-dark); background: var(--mint); border-color: #bfe0ca; }
+.badge.state { color: #7a540b; background: #fff3d4; border-color: #ebd397; }
+.badge.outcome { color: var(--green-dark); background: #d4eddc; border-color: #a6d6b5; }
+.badge.economics { color: #8c2f1f; background: #fdeae5; border-color: #f0c0b5; }
+.scm-sliders-stack { display: grid; gap: 16px; }
+.scm-slider-row { display: grid; gap: 6px; }
+.scm-slider-row label { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; font-size: .88rem; }
+.scm-slider-row label span { color: var(--ink); font-weight: 600; }
+.scm-slider-row label strong { color: var(--green-dark); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.scm-slider-row input[type="range"] { width: 100%; accent-color: var(--green); cursor: pointer; }
+.scm-outcomes-box { margin-top: 22px; padding: 18px; border: 1px solid #cfe3d5; border-radius: 12px; background: #f5faf6; display: grid; gap: 10px; }
+.scm-outcomes-box h4 { margin: 0 0 4px; font-size: .85rem; text-transform: uppercase; letter-spacing: .06em; color: var(--green-dark); }
+.outcome-metric { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding-top: 8px; border-top: 1px solid var(--line); font-size: .92rem; }
+.outcome-metric:first-of-type { padding-top: 0; border-top: 0; }
+.outcome-metric span { color: var(--muted); }
+.outcome-metric strong { color: var(--ink); font-size: 1.05rem; font-variant-numeric: tabular-nums; }
+@media (max-width: 900px) {
+  .scm-lab-grid { grid-template-columns: minmax(0, 1fr); }
+}
