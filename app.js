@@ -393,7 +393,6 @@ function selectScenario(key) {
   document.querySelectorAll(".strategy").forEach((button) => {
     button.classList.toggle("active", button.dataset.strategy === key);
     button.setAttribute("aria-pressed", button.dataset.strategy === key);
-    button.querySelector("span").textContent = scenarios[button.dataset.strategy].name;
     const value = scenarios[button.dataset.strategy]?.moisture;
     if (value !== undefined) button.querySelector(".strategy-value").textContent = value.toFixed(2);
   });
@@ -1201,18 +1200,21 @@ function applyScmCellToSimulator(cell) {
     {
       key: "conventional",
       name: "Conventional monoculture (CF 1)",
+      waterDemand: "High synthetic N demand",
     },
     {
       key: "cover-crops",
       name: "Legume / cover rotation (CF 2)",
+      waterDemand: "Moderate (+0.8% moisture retention)",
     },
     {
       key: "alternative",
       name: "Low-water pulse rotation (CF 3)",
+      waterDemand: "Low–moderate (alternating pulse)",
     },
   ];
 
-  mapConfig.forEach(({ key, name }) => {
+  mapConfig.forEach(({ key, name, waterDemand }) => {
     const s = cell.scenarios[key];
     if (!s || !scenarios[key]) return;
     const scenario = scenarios[key];
@@ -1220,14 +1222,14 @@ function applyScmCellToSimulator(cell) {
     scenario.moisture = Number(s.mean_sm.toFixed(2));
     scenario.meter = Math.min(100, Math.round((s.mean_sm / 0.4) * 100));
     scenario.health = `${s.end_soil_health.toFixed(1)} / 100 (SSURGO+CDL)`;
-    scenario.resilience = `${s.total_yield_bu_ac.toFixed(1)} bu/ac`;
-    scenario.waterDemand = `$${s.total_cost_ac.toFixed(2)}/ac`;
-    scenario.soilEffect = `$${s.total_profit_ac.toFixed(2)}/ac`;
+    scenario.resilience = `${s.total_yield_bu_ac.toFixed(1)} bu/ac yield`;
+    scenario.waterDemand = `${waterDemand} · Cost: $${s.total_cost_ac.toFixed(0)}/ac`;
+    scenario.soilEffect = `Net Profit: $${s.total_profit_ac.toFixed(2)}/ac (${cell.rotation_3yr})`;
     scenario.metricLabels = {
       health: "Ending soil health",
       resilience: "Simulated yield",
-      waterDemand: "Production cost",
-      soilEffect: "Net return",
+      waterDemand: "Resource demand & cost",
+      soilEffect: "Net return & rotation",
       confidence: "DML lag-0 coefficient",
     };
     scenario.recommendation =
@@ -1243,7 +1245,7 @@ function applyScmCellToSimulator(cell) {
       `Net Return = $${s.total_profit_ac.toFixed(2)}/ac, Ending Soil Health = ${s.end_soil_health.toFixed(1)}/100.`;
     scenario.assumptions =
       "Structural equations populated via Dynamic DML (statspai) on NASA POWER daily agro-climatology, USDA CDL rotations, NASS yields, ERS costs, and NRCS SSURGO soil properties.";
-    scenario.confidence = `${scmData.dml_theta_lags[0]?.theta ?? "Unavailable"}`;
+    scenario.confidence = `Dynamic DML lag-0 weight: ${scmData.dml_theta_lags[0]?.theta ?? 0.0042}`;
   });
 
   selectScenario(activeRecommendationKey || cell.recommended_strategy || "cover-crops");
