@@ -163,16 +163,8 @@ function calculateRecommendation(answers) {
     reasons.push("a fall or winter window can support soil cover between cash crops");
   }
   if (answers.season === "summer") scores.alternative += 1;
-  if (selectedAreaKey === "great-plains") {
-    scores.alternative += 1;
-    reasons.push("the Great Plains focus is water conservation");
-  } else if (selectedAreaKey === "central-valley") {
-    scores["cover-crops"] += 1;
-    reasons.push("the Central Valley focus is water availability and soil protection");
-  } else {
-    scores.alternative += 1;
-    reasons.push("the East Africa focus is rainfall resilience");
-  }
+  scores.alternative += 1;
+  reasons.push("the Eastern Washington focus emphasizes climate-aware water management");
   if (constraints.has("cost")) {
     scores.conventional += 1;
     scores["cover-crops"] -= 1;
@@ -264,33 +256,6 @@ document.querySelectorAll(".strategy").forEach((button) => {
 selectScenario("conventional");
 
 const areas = {
-  "great-plains": {
-    name: "Great Plains, USA",
-    description: "A dryland grain region used to demonstrate drought-aware rotation planning.",
-    crops: "Wheat · Corn · Sorghum",
-    terrain: "Prairie · Rolling plains",
-    focus: "Water conservation",
-    coordinates: [39.5, -101.5],
-    zoom: 5,
-  },
-  "central-valley": {
-    name: "Central Valley, USA",
-    description: "A productive agricultural valley used to explore water and heat stress tradeoffs.",
-    crops: "Rice · Almonds · Tomatoes",
-    terrain: "Irrigated valley · Alluvial soils",
-    focus: "Water availability",
-    coordinates: [37.1, -121.9],
-    zoom: 7,
-  },
-  "east-africa": {
-    name: "East Africa",
-    description: "A mixed smallholder landscape used to explore rainfall variability and soil health.",
-    crops: "Maize · Beans · Sorghum",
-    terrain: "Highlands · Semi-arid plains",
-    focus: "Rainfall resilience",
-    coordinates: [0.3, 36.8],
-    zoom: 5,
-  },
   "eastern-washington": {
     name: "Eastern Washington data",
     description:
@@ -313,7 +278,7 @@ const areaElements = {
   status: document.querySelector("#area-selection-status"),
 };
 
-let selectedAreaKey = "great-plains";
+let selectedAreaKey = "eastern-washington";
 const areaLayers = {};
 const terrainLayers = {};
 let powerData = null;
@@ -538,7 +503,7 @@ function selectArea(key, moveMap = true) {
   areaElements.terrain.textContent = area.terrain;
   areaElements.focus.textContent = area.focus;
   areaElements.heroName.textContent = area.name;
-  areaElements.status.textContent = "Ready to explore this placeholder area.";
+  areaElements.status.textContent = "Ready to explore Eastern Washington.";
 
   document.querySelectorAll(".area-option").forEach((button) => {
     button.classList.toggle("active", button.dataset.area === key);
@@ -598,6 +563,8 @@ fetch("data/terrain-analysis.geojson")
 document.querySelectorAll(".area-option").forEach((button) => {
   button.addEventListener("click", () => selectArea(button.dataset.area));
 });
+
+selectArea("eastern-washington", false);
 
 document.querySelector("#use-area").addEventListener("click", () => {
   areaElements.status.textContent = `${areas[selectedAreaKey].name} is now the focus for the next analysis.`;

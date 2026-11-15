@@ -68,7 +68,7 @@
         </div>
         <div class="hero-stat" aria-label="Current field conditions">
           <span class="stat-label">Selected area</span>
-          <strong id="selected-area-name">Great Plains, USA</strong>
+          <strong id="selected-area-name">Eastern Washington data</strong>
           <span class="status-pill">Forecast: elevated drought risk</span>
           <div class="stat-grid">
             <div><span>Soil moisture</span><strong>0.15</strong></div>
@@ -109,8 +109,8 @@
           <p class="eyebrow">Explore a growing region</p>
           <h2 id="map-title">Select an area to focus the analysis</h2>
           <p>
-            Choose a placeholder region on the map or from the list. The selected
-            crop and terrain profile will guide the next model inputs.
+            Explore the Eastern Washington wheat dataset and its NASA POWER
+            climate observations.
           </p>
         </div>
         <div class="map-layout">
@@ -120,22 +120,19 @@
           </div>
           <aside class="area-panel" aria-live="polite">
             <p class="eyebrow">Selected focus area</p>
-            <h3 id="area-panel-name">Great Plains, USA</h3>
+            <h3 id="area-panel-name">Eastern Washington data</h3>
             <p id="area-panel-description">
-              A dryland grain region used to demonstrate drought-aware rotation planning.
+              NASA POWER sample data covering Eastern Washington climate conditions.
             </p>
             <div class="area-facts">
-              <div><span>Example crops</span><strong id="area-crops">Wheat · Corn · Sorghum</strong></div>
-              <div><span>Terrain</span><strong id="area-terrain">Prairie · Rolling plains</strong></div>
-              <div><span>Focus</span><strong id="area-focus">Water conservation</strong></div>
+              <div><span>Example crops</span><strong id="area-crops">Wheat analysis dataset</strong></div>
+              <div><span>Terrain</span><strong id="area-terrain">Dataset points · Coordinates loaded from NASA POWER export</strong></div>
+              <div><span>Focus</span><strong id="area-focus">Climate analytics</strong></div>
             </div>
             <button class="button button-primary area-button" id="use-area" type="button">Use this area</button>
-            <p class="area-selection" id="area-selection-status">Ready to explore this placeholder area.</p>
+            <p class="area-selection" id="area-selection-status">Ready to explore Eastern Washington.</p>
             <div class="area-options" role="group" aria-label="Example areas">
-              <button class="area-option active" type="button" data-area="great-plains">Great Plains</button>
-              <button class="area-option" type="button" data-area="central-valley">Central Valley</button>
-              <button class="area-option" type="button" data-area="east-africa">East Africa</button>
-              <button class="area-option" type="button" data-area="eastern-washington">Eastern Washington data</button>
+              <button class="area-option active" type="button" data-area="eastern-washington">Eastern Washington data</button>
             </div>
           </aside>
         </div>
