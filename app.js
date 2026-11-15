@@ -49,6 +49,10 @@ const scenarios = {
   },
 };
 
+const defaultScenarios = Object.fromEntries(
+  Object.entries(scenarios).map(([key, scenario]) => [key, { ...scenario }]),
+);
+
 const elements = {
   name: document.querySelector("#selected-strategy"),
   moisture: document.querySelector("#moisture-value"),
@@ -76,6 +80,7 @@ const survey = {
   resultReason: document.querySelector("#survey-recommendation-reason"),
   scoreList: document.querySelector("#survey-score-list"),
   edit: document.querySelector("#survey-edit"),
+  reset: document.querySelector("#survey-reset"),
   priorityLimit: document.querySelector("#priority-limit"),
   locationStatus: document.querySelector("#survey-location-status"),
   climateContext: document.querySelector("#survey-climate-context"),
@@ -85,6 +90,7 @@ const survey = {
 };
 let surveyMap = null;
 let activeRecommendationKey = null;
+let surveyAdvanceTimer;
 
 function checkedValues(name) {
   return [...survey.form.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
@@ -108,6 +114,7 @@ function readSurveyAnswers() {
 }
 
 function showSurveyStep(step) {
+  window.clearTimeout(surveyAdvanceTimer);
   survey.currentStep = step;
   survey.steps.forEach((field, index) => {
     const active = index + 1 === step;
@@ -289,9 +296,37 @@ function showSurveyRecommendation() {
   document.querySelector("#simulator").scrollIntoView({ behavior: "smooth" });
 }
 
+function resetSurvey() {
+  survey.form.reset();
+  survey.latitude.value = "";
+  survey.longitude.value = "";
+  if (surveyLocationMarker) {
+    surveyLocationMarker.remove();
+    surveyLocationMarker = null;
+  }
+  survey.locationStatus.textContent = "No farm point selected yet.";
+  survey.priorityLimit.textContent = "";
+  [survey.resultTitle, survey.resultReason, survey.climateContext, survey.scoreList]
+    .forEach((element) => { element.textContent = ""; });
+  survey.result.hidden = true;
+  survey.form.hidden = false;
+  Object.entries(defaultScenarios).forEach(([key, scenario]) => {
+    Object.assign(scenarios[key], scenario);
+  });
+  activeRecommendationKey = null;
+  selectScenario("conventional");
+  showSurveyStep(1);
+  if (surveyMap) {
+    surveyMap.invalidateSize();
+    surveyMap.fitBounds(easternWashingtonBounds);
+  }
+}
+
+survey.reset.addEventListener("click", resetSurvey);
 survey.form.addEventListener("change", (event) => {
   if (event.target.type === "radio" && [3, 4].includes(survey.currentStep)) {
-    window.setTimeout(() => showSurveyStep(Math.min(survey.steps.length, survey.currentStep + 1)), 220);
+    window.clearTimeout(surveyAdvanceTimer);
+    surveyAdvanceTimer = window.setTimeout(() => showSurveyStep(Math.min(survey.steps.length, survey.currentStep + 1)), 220);
   }
   if (event.target.name === "priorities") {
     const priorities = survey.form.querySelectorAll('input[name="priorities"]:checked');
