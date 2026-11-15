@@ -5,7 +5,7 @@ const scenarios = {
     meter: 50,
     health: "At risk",
     resilience: "Low",
-    recommendation: "Baseline",
+    recommendation: "Baseline comparison",
     tone: "neutral",
     waterDemand: "High",
     soilEffect: "Continued nutrient removal",
@@ -21,7 +21,7 @@ const scenarios = {
     meter: 76,
     health: "Stable",
     resilience: "Higher",
-    recommendation: "Best illustrative outcome",
+    recommendation: "Soil-cover option",
     tone: "",
     waterDemand: "Moderate",
     soilEffect: "Improved cover and organic matter",
@@ -37,7 +37,7 @@ const scenarios = {
     meter: 68,
     health: "Stable",
     resilience: "Moderate",
-    recommendation: "Promising alternative",
+    recommendation: "Lower-water alternative",
     tone: "",
     waterDemand: "Low–moderate",
     soilEffect: "Targeted nutrient and residue benefits",
@@ -84,6 +84,7 @@ const survey = {
   currentStep: 1,
 };
 let surveyMap = null;
+let activeRecommendationKey = null;
 
 function checkedValues(name) {
   return [...survey.form.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
@@ -189,6 +190,29 @@ function calculateRecommendation(answers) {
   if (answers.season === "summer") scores.alternative += 1;
   scores.alternative += 1;
   reasons.push("the Eastern Washington focus emphasizes climate-aware water management");
+  if (answers.pastCrops.some((crop) => ["wheat", "barley", "corn"].includes(crop))) {
+    scores.alternative += 1;
+    reasons.push("your recent grain rotation supports comparing a lower-water cover mix");
+  }
+  if (answers.pastCrops.some((crop) => ["potatoes", "onions"].includes(crop))) {
+    scores["cover-crops"] += 1;
+    reasons.push("your recent high-disturbance crops support evaluating added soil cover");
+  }
+  if (answers.soilType === "sandy") {
+    scores["cover-crops"] += 1;
+    reasons.push("sandy soil increases the value of cover and residue protection");
+  } else if (answers.soilType === "clay-loam") {
+    scores.alternative += 1;
+    reasons.push("clay-loam soil favors a flexible mix with controlled establishment demand");
+  }
+  const fieldSize = Number(answers.fieldSize);
+  if (Number.isFinite(fieldSize) && fieldSize >= 500) {
+    scores.conventional += 1;
+    reasons.push("the large field size favors a strategy that is easier to scale with existing equipment");
+  } else if (Number.isFinite(fieldSize) && fieldSize > 0 && fieldSize <= 50) {
+    scores["cover-crops"] += 1;
+    reasons.push("the smaller field size makes a cover-crop trial easier to test");
+  }
   if (constraints.has("cost")) {
     scores.conventional += 1;
     scores["cover-crops"] -= 1;
@@ -211,9 +235,41 @@ function calculateRecommendation(answers) {
   return { key: ranked[0][0], scores, reasons, climateAdjustment, nearestPoint: nearest };
 }
 
+function updateScenarioMetrics(answers, recommendation) {
+  const climateRisk = Number(powerData?.stress_risk_summary?.mean ?? 0.234);
+  const waterAdjustment = {
+    rainfed: -0.02,
+    partial: 0.01,
+    irrigated: 0.04,
+    unknown: 0,
+  }[answers.water] || 0;
+  const seasonAdjustment = answers.season === "summer" ? -0.01 : 0;
+  const baselineMoisture = Math.max(0.08, Math.min(0.32, 0.20 - climateRisk * 0.08 + waterAdjustment + seasonAdjustment));
+  const moistureValues = {
+    conventional: baselineMoisture,
+    "cover-crops": baselineMoisture + (answers.water === "rainfed" ? 0.015 : 0.035),
+    alternative: baselineMoisture + 0.025,
+  };
+  const labels = {
+    conventional: "Baseline comparison",
+    "cover-crops": "Soil-cover option",
+    alternative: "Lower-water alternative",
+  };
+  Object.entries(moistureValues).forEach(([key, moisture]) => {
+    const scenario = scenarios[key];
+    scenario.moisture = Number(Math.max(0.05, Math.min(0.4, moisture)).toFixed(2));
+    scenario.meter = Math.round((scenario.moisture / 0.4) * 100);
+    scenario.recommendation = key === recommendation.key ? "Best fit for your inputs" : labels[key];
+    scenario.confidence = `Exploratory fit score: ${recommendation.scores[key]}`;
+    scenario.assumptions = `Uses the selected climate proxy (${climateRisk.toFixed(3)} mean stress risk), water access, season, priorities, and constraints.`;
+  });
+  activeRecommendationKey = recommendation.key;
+}
+
 function showSurveyRecommendation() {
   const answers = readSurveyAnswers();
   const recommendation = calculateRecommendation(answers);
+  updateScenarioMetrics(answers, recommendation);
   const scenario = scenarios[recommendation.key];
   selectScenario(recommendation.key);
   survey.resultTitle.textContent = scenario.name;
