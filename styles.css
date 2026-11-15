@@ -236,7 +236,8 @@ input::placeholder { color: var(--muted); opacity: 1; }
 .main-nav a { display: inline-flex; min-height: 44px; align-items: center; padding: 8px 12px; border-radius: 6px; color: var(--muted); font-size: .9rem; font-weight: 600; text-decoration: none; white-space: nowrap; }
 .main-nav a:hover, .main-nav a:focus-visible { color: var(--green-dark); background: var(--mint); }
 .hero-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 24px; }
-.text-link { display: inline-flex; gap: 12px; align-items: center; min-height: 44px; color: var(--green-dark); font-size: .95rem; font-weight: 600; text-underline-offset: 4px; }
+.text-link { display: inline-flex; gap: 12px; align-items: center; min-height: 44px; color: var(--green-dark); font-size: .95rem; font-weight: 600; text-decoration: none; }
+.text-link > span:not([aria-hidden]) { text-decoration: underline; text-underline-offset: 4px; }
 .button-primary:hover { background: var(--green-dark); }
 .button-secondary:hover:not(:disabled) { background: var(--mint); border-color: var(--green); }
 .survey-section > .section-heading { position: sticky; top: 100px; }
