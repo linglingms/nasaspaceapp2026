@@ -195,7 +195,13 @@
             <li>Compare the observed outcome and report the estimated effect with uncertainty.</li>
           </ol>
           <p class="analysis-note"><strong>Example question:</strong> For fields with similar drought exposure, did adding a cover crop increase end-of-season soil moisture?</p>
-          <div class="result"><span>Illustrative result</span><strong>+0.03 soil moisture</strong></div>
+          <div class="result analysis-result">
+            <span id="causal-result-label">Causal estimate status</span>
+            <strong id="causal-result">Not estimable from the current datasets</strong>
+          </div>
+          <p class="analysis-data-note" id="causal-data-status">
+            The survey captures rotation intent, while the NASA POWER and commodities files contain weather and market observations. A defensible cover-crop effect still needs field-level treatment, comparison, and measured soil-moisture outcomes.
+          </p>
         </article>
         <article class="analysis-card predictive-card">
           <div class="card-icon">NEXT</div>
@@ -212,7 +218,13 @@
             <li>Generate a forecast, confidence interval, and accuracy score on held-out seasons.</li>
           </ol>
           <p class="analysis-note"><strong>Example question:</strong> Given the next season's expected rainfall and current moisture, how likely is elevated vegetation stress?</p>
-          <div class="result"><span>Illustrative forecast</span><strong>Elevated stress risk</strong></div>
+          <div class="result analysis-result">
+            <span>Live predictive baseline</span>
+            <strong id="predictive-result">Loading model metrics…</strong>
+          </div>
+          <p class="analysis-data-note" id="predictive-data-status">
+            The predictive result combines the executed Eastern Washington weather-proxy model with the commodities price baseline.
+          </p>
         </article>
       </section>
 

@@ -282,6 +282,7 @@ let selectedAreaKey = "eastern-washington";
 const areaLayers = {};
 const terrainLayers = {};
 let powerData = null;
+let commodityData = null;
 let powerPointsLayer;
 const farmMap = L.map("farm-map", { scrollWheelZoom: false }).setView(
   areas[selectedAreaKey].coordinates,
@@ -320,6 +321,11 @@ const commodityElements = {
   classificationMetrics: document.querySelector("#commodity-classification-metrics"),
   priceMetrics: document.querySelector("#commodity-price-metrics"),
   summaryBody: document.querySelector("#commodity-summary-body"),
+};
+
+const analysisElements = {
+  predictiveResult: document.querySelector("#predictive-result"),
+  predictiveStatus: document.querySelector("#predictive-data-status"),
 };
 
 const chartViews = {
@@ -487,6 +493,7 @@ function loadCommodityAnalytics() {
       return response.json();
     })
     .then((data) => {
+      commodityData = data;
       data.commodity_summary.forEach((item) => {
         const option = document.createElement("option");
         option.value = item.commodity;
@@ -494,6 +501,7 @@ function loadCommodityAnalytics() {
         commodityElements.filter.append(option);
       });
       renderCommodityAnalytics(data, "all");
+      if (powerData) updatePredictiveSummary(powerData, data);
       commodityElements.filter.addEventListener("change", (event) => renderCommodityAnalytics(data, event.target.value));
     })
     .catch((error) => {
@@ -558,6 +566,19 @@ function renderPowerData(data) {
   renderDiagnostics(data);
   renderStaticModelCharts(data);
   renderAnalyticsChart();
+  updatePredictiveSummary(data);
+}
+
+function updatePredictiveSummary(powerDataValue, commodityDataValue = commodityData) {
+  if (!analysisElements.predictiveResult) return;
+  const accuracy = Number(powerDataValue.metrics.accuracy * 100).toFixed(1);
+  const meanRisk = Number(powerDataValue.stress_risk_summary.mean).toFixed(3);
+  analysisElements.predictiveResult.textContent = `${accuracy}% holdout accuracy`;
+  analysisElements.predictiveStatus.textContent =
+    `Eastern Washington next-day stress proxy: mean risk ${meanRisk}. ` +
+    (commodityDataValue
+      ? `Commodity price baseline: R² ${Number(commodityDataValue.price_model.r2).toFixed(2)}.`
+      : "Loading the commodity price baseline.");
 }
 
 function renderDiagnostics(data) {
