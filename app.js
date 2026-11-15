@@ -450,21 +450,21 @@ function createBasemaps() {
   };
 }
 
-function addBasemaps(map) {
+function addBasemaps(map, overlays) {
   const basemaps = createBasemaps();
   basemaps.Map.addTo(map);
-  L.control.layers(basemaps, null, { position: "topright", collapsed: false }).addTo(map);
+  L.control.layers(basemaps, overlays, { position: "topright", collapsed: false }).addTo(map);
   return basemaps;
 }
 
-addBasemaps(farmMap);
+powerPointsLayer = L.layerGroup();
+addBasemaps(farmMap, { "NASA POWER samples": powerPointsLayer });
 L.control.scale({ imperial: true, metric: true, position: "bottomleft" }).addTo(farmMap);
-
-powerPointsLayer = L.layerGroup().addTo(farmMap);
 
 surveyMap = L.map("survey-map", { scrollWheelZoom: false }).fitBounds(easternWashingtonBounds);
 surveyMap.setMaxBounds(easternWashingtonBounds);
-addBasemaps(surveyMap);
+const surveyPointsLayer = L.layerGroup();
+addBasemaps(surveyMap, { "NASA POWER samples": surveyPointsLayer });
 // Dim everything outside the survey boundary so the allowed area reads at a glance.
 L.polygon(
   [
@@ -484,7 +484,6 @@ L.rectangle(easternWashingtonBounds, {
   dashArray: "6 6",
   fill: false,
 }).addTo(surveyMap).bindTooltip("Eastern Washington survey boundary", { className: "map-tooltip", sticky: true });
-const surveyPointsLayer = L.layerGroup().addTo(surveyMap);
 
 const farmMarkerIcon = L.divIcon({
   className: "farm-marker",
@@ -880,11 +879,15 @@ function loadPowerData() {
           className: "power-point",
         }).bindPopup(
           `<strong>Nearest NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}`,
-        ).addTo(surveyPointsLayer);
+        ).bindTooltip(`NASA POWER sample · ${powerPointLabel(point)}`, {
+          direction: "top",
+          offset: [0, -6],
+          className: "map-label",
+        }).addTo(surveyPointsLayer);
         bounds.push([point.lat, point.lon]);
       });
       if (!regionBounds && bounds.length) farmMap.fitBounds(bounds, { padding: [35, 35] });
-      areaElements.status.textContent = `NASA POWER loaded: ${data.points.length} LAT/LON points shown.`;
+      areaElements.status.textContent = `${data.points.length} NASA POWER sample locations loaded.`;
     })
     .catch((error) => {
       analyticsElements.dataStatus.textContent = "Data load failed";
@@ -915,7 +918,6 @@ function selectArea(key, moveMap = true) {
   Object.entries(areaLayers).forEach(([areaKey, layer]) => {
     layer.setStyle({ fillOpacity: areaKey === key ? 0.22 : 0.1, weight: areaKey === key ? 3 : 1 });
   });
-  powerPointsLayer.clearLayers();
   if (key === "eastern-washington") loadPowerData();
   if (moveMap) {
     if (regionBounds) farmMap.flyToBounds(regionBounds, { padding: [24, 24], duration: 0.7 });
