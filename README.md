@@ -14,18 +14,40 @@ model limitations.
 
 TerraCycle AI follows this workflow:
 
-1. Select the Eastern Washington focus area and inspect NASA POWER observation
-   points.
-2. Review climate charts, environmental zones, stress-risk summaries, and
+1. Watch the optional opening sequence from orbit to the Eastern Washington
+   study area.
+2. Select the Eastern Washington focus area and inspect NASA POWER observation
+   points, climate coverage, counties, cities, and terrain context.
+3. Review climate charts, environmental zones, stress-risk summaries, and
    Random Forest diagnostics.
-3. Explore Washington commodity groups, price records, classification metrics,
+4. Explore Washington commodity groups, price records, classification metrics,
    and price-prediction metrics.
-4. Place a farm marker inside the Eastern Washington survey map.
-5. Answer questions about crops, water, season, priorities, soil, acreage,
+5. Place and drag a farm marker inside the bounded Eastern Washington survey
+   map.
+6. Answer questions about crops, water, season, priorities, soil, acreage,
    budget, equipment, and markets.
-6. Compare three rotation strategies using survey inputs and climate context.
+7. Compare three rotation strategies using survey inputs, climate context, and
+   the selected SCM parcel.
 
 The application is decision-support research software, not automated farm advice.
+
+## Demo experience and interface behavior
+
+The app is designed as a guided research demo rather than a form-only dashboard:
+
+- `assets/intro/intro.mp4` and `assets/intro/intro.webm` provide the opening
+  orbit-to-region animation, with a skip/control path into the application.
+- The focus-area map supports optional NASA POWER sample-point and coverage
+  layers, county boundaries, nearby-state context, city labels, terrain
+  context, and a detailed OpenStreetMap basemap.
+- The survey map is separate from the focus map and keeps the selected farm
+  marker in survey state.
+- Survey questions remain on the current step until the user chooses the next
+  question or submits the recommendation. A reset control confirms before
+  clearing survey inputs and results.
+- Strategy cards expose the recommendation, moisture estimate, fit score,
+  confidence, tradeoffs, and explanation instead of presenting a single
+  unexplained answer.
 
 ## Current geographic scope
 
@@ -184,6 +206,32 @@ a fabricated effect such as `+0.03 soil moisture`.
 The predictive analysis is separate: it forecasts a weather-derived proxy and does
 not prove that a rotation caused an outcome.
 
+## Spatiotemporal SCM integration
+
+[`data/scm-counterfactuals.json`](./data/scm-counterfactuals.json) contains the
+current export of a demonstration **Spatiotemporal Dynamic DML plus Structural
+Causal Model (SCM)** workflow. It combines NASA POWER agro-climatology with
+USDA Cropland Data Layer (CDL) rotations, NASS yields, ERS costs, and NRCS
+SSURGO soil properties.
+
+The app uses this export to:
+
+- Display selectable 10 km parcel markers on the survey map.
+- Match a survey location to the nearest SCM parcel.
+- Compare conventional monoculture, legume/cover rotation, and low-water pulse
+  counterfactuals.
+- Show simulated yield, production cost, net return, ending soil health, and
+  profit gain per acre.
+- Display heatwave/drought and neighboring-irrigation-spillover scenarios.
+- Render Dynamic DML moisture lag weights, counterfactual yields, counterfactual
+  soil health, and a selected parcel's soil-health trajectory.
+- Apply the selected parcel's values to the recommendation cards while retaining
+  the survey inputs and explanatory context.
+
+These are model-based counterfactual demonstrations, not measured field
+experiments or validated causal effects. The export should be regenerated and
+reviewed when source datasets, assumptions, or model code change.
+
 ## Notebook files and data flow
 
 ### `dataset experimentation nasa.ipynb`
@@ -214,6 +262,22 @@ The commodities notebook:
 The source `.numbers` workbooks are local research inputs and are not committed
 to this repository. Update the absolute source paths in the notebooks when
 running them on another machine.
+
+### Generated application data
+
+The browser loads static exports at runtime:
+
+- `data/eastern-washington-power.json` — climate observations, zones, stress
+  proxy, and predictive diagnostics.
+- `data/commodities-analytics.json` — Washington commodity summaries and model
+  metrics.
+- `data/scm-counterfactuals.json` — parcel-level SCM counterfactuals and
+  Dynamic DML results.
+- `data/eastern-washington.geojson` and `data/region-context.geojson` —
+  geographic boundaries and map context.
+
+The app does not call a backend API. Changes to these exports are published with
+the static site deployment.
 
 ## Optional terrain workflow
 
@@ -252,6 +316,7 @@ Large NASA raster files are intentionally not committed.
 - Python, pandas, NumPy, scikit-learn, Matplotlib, and `numbers-parser` for
   notebook experiments
 - Optional GeoPandas and Rasterio for terrain processing
+- MP4/WebM video assets for the opening sequence
 - Static Vercel deployment
 
 There is no frontend build step or package manifest. Leaflet is loaded from a
@@ -283,6 +348,15 @@ The current production alias is:
 
 <https://nasaspaceapp2026causualfarm.vercel.app>
 
+The production deployment is made from the `main` branch. The `experiment`
+branch was promoted into `main` after the SCM, interface, map, and opening
+sequence work was integrated. Deploying manually from the repository root
+publishes the current checkout:
+
+```bash
+npx vercel deploy --prod --yes
+```
+
 ## Validation
 
 Useful checks after changing the app:
@@ -291,6 +365,7 @@ Useful checks after changing the app:
 node --check app.js
 python3 -m json.tool data/eastern-washington-power.json
 python3 -m json.tool data/commodities-analytics.json
+python3 -m json.tool data/scm-counterfactuals.json
 git diff --check
 ```
 
