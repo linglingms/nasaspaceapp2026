@@ -11,8 +11,31 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       crossorigin=""
     />
+    <script>
+      // Decide before first paint whether the opening video plays (once per session).
+      (function () {
+        var force = /[?&]intro(=|&|$)/.test(location.search);
+        var seen = false;
+        try { seen = sessionStorage.getItem("tc-intro-seen") === "1"; } catch (e) {}
+        var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (!force && (seen || reduce)) return;
+        document.documentElement.classList.add("intro-active");
+        // Give up quietly if the video has not started within 4 s (slow network).
+        setTimeout(function () {
+          if (!window.__introStarted) {
+            document.documentElement.classList.remove("intro-active");
+            var el = document.getElementById("intro");
+            if (el) el.remove();
+          }
+        }, 4000);
+      })();
+    </script>
   </head>
   <body>
+    <div id="intro" class="intro">
+      <video class="intro-video" muted playsinline preload="auto" aria-hidden="true"></video>
+      <button class="intro-skip" type="button">Skip intro</button>
+    </div>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="site-header">
       <div class="container header-content">
@@ -668,5 +691,6 @@
       crossorigin=""
     ></script>
     <script src="app.js"></script>
+    <script src="intro.js"></script>
   </body>
 </html>
