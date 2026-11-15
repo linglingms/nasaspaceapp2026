@@ -81,6 +81,7 @@ const survey = {
   scoreList: document.querySelector("#survey-score-list"),
   edit: document.querySelector("#survey-edit"),
   reset: document.querySelector("#survey-reset"),
+  resetDialog: document.querySelector("#survey-reset-dialog"),
   priorityLimit: document.querySelector("#priority-limit"),
   locationStatus: document.querySelector("#survey-location-status"),
   climateContext: document.querySelector("#survey-climate-context"),
@@ -297,7 +298,6 @@ function showSurveyRecommendation() {
 }
 
 function resetSurvey() {
-  if (!window.confirm("Reset all survey inputs? This will clear your answers, farm marker, and recommendation. This cannot be undone.")) return;
   survey.form.reset();
   survey.latitude.value = "";
   survey.longitude.value = "";
@@ -323,7 +323,14 @@ function resetSurvey() {
   }
 }
 
-survey.reset.addEventListener("click", resetSurvey);
+survey.reset.addEventListener("click", () => {
+  window.clearTimeout(surveyAdvanceTimer);
+  survey.resetDialog.returnValue = "";
+  survey.resetDialog.showModal();
+});
+survey.resetDialog.addEventListener("close", () => {
+  if (survey.resetDialog.returnValue === "reset") resetSurvey();
+});
 survey.form.addEventListener("change", (event) => {
   if (event.target.type === "radio" && [3, 4].includes(survey.currentStep)) {
     window.clearTimeout(surveyAdvanceTimer);

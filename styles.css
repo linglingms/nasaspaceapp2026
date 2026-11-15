@@ -174,6 +174,13 @@ h3 { margin-bottom: 12px; font-size: 1.15rem; line-height: 1.35; text-wrap: bala
 .survey-progress-heading { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
 .survey-reset { min-height: 44px; padding: 8px 12px; border: 1px solid var(--line); border-radius: 7px; color: var(--green-dark); background: white; font: inherit; cursor: pointer; }
 .survey-reset:hover { background: var(--mint); }
+.survey-reset-dialog { width: min(460px, calc(100% - 32px)); max-height: calc(100dvh - 32px); padding: clamp(24px, 5vw, 32px); border: 1px solid var(--line); border-radius: 16px; color: var(--ink); background: var(--paper); box-shadow: 0 24px 80px rgb(23 53 43 / 20%); }
+.survey-reset-dialog::backdrop { background: rgb(23 53 43 / 45%); }
+.survey-reset-dialog h2 { font-size: 1.5rem; }
+.survey-reset-dialog p { margin-bottom: 24px; color: var(--muted); }
+.survey-reset-dialog-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 12px; }
+.survey-reset-dialog-actions .button { flex: 1 0 auto; }
+body:has(.survey-reset-dialog[open]) { overflow: hidden; }
 .survey-progress-track { height: 7px; overflow: hidden; border-radius: 8px; background: #e8eee9; }
 .survey-progress-track span { display: block; width: 14.28%; height: 100%; border-radius: inherit; background: var(--green); transition: width .25s ease; }
 .survey-step { min-width: 0; min-height: 220px; margin: 0; padding: 0; border: 0; }

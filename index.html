@@ -646,6 +646,17 @@
       </details>
     </main>
 
+    <dialog id="survey-reset-dialog" class="survey-reset-dialog" aria-labelledby="survey-reset-title" aria-describedby="survey-reset-description">
+      <form method="dialog">
+        <h2 id="survey-reset-title">Reset your survey?</h2>
+        <p id="survey-reset-description">This will clear all your answers, your farm marker, and your recommendation. You can’t undo this.</p>
+        <div class="survey-reset-dialog-actions">
+          <button class="button button-secondary" value="cancel" autofocus>Keep my answers</button>
+          <button class="button button-primary" value="reset">Reset all</button>
+        </div>
+      </form>
+    </dialog>
+
     <footer class="site-footer">
       <div class="container"><strong>TerraCycle AI</strong><span>Decision support, not automated farm advice.</span><a
           class="repo-link"
