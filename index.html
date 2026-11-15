@@ -307,6 +307,45 @@
         </div>
       </section>
 
+      <!-- SCM Interactive Graph & Variable Modifiers Workspace -->
+      <section id="scm-interactive-lab" class="section panel section-panel" aria-labelledby="scm-lab-title">
+        <div class="section-heading">
+          <h2 id="scm-lab-title">Structural Causal Model (SCM) Live Simulator</h2>
+          <p class="section-description">Explore the trained causal graph nodes and adjust any input variable to observe real-time counterfactual propagation across outcomes.</p>
+        </div>
+
+        <div class="scm-lab-grid">
+          <!-- Left: SVG Node-Link Graph Visualization -->
+          <div class="scm-graph-container">
+            <h3>Causal Graph Architecture</h3>
+            <div id="scm-svg-canvas" class="scm-canvas">
+              <!-- Dynamically rendered via app.js -->
+            </div>
+            <div class="scm-legend">
+              <span class="badge climate">Climate</span>
+              <span class="badge management">Management</span>
+              <span class="badge state">State</span>
+              <span class="badge outcome">Outcome</span>
+              <span class="badge economics">Economics</span>
+            </div>
+          </div>
+
+          <!-- Right: Interactive Input Sliders for All SCM Variables -->
+          <div class="scm-controls-container">
+            <h3>Modify Input Variables</h3>
+            <div id="scm-sliders-form" class="scm-sliders-stack">
+              <!-- Sliders injected dynamically from scm-counterfactuals.json -->
+            </div>
+            <div id="scm-live-outcomes" class="scm-outcomes-box" aria-live="polite">
+              <h4>Predicted Counterfactual Outcomes</h4>
+              <div class="outcome-metric"><span>Updated Yield:</span> <strong id="out-yield">--</strong></div>
+              <div class="outcome-metric"><span>Updated Soil Health:</span> <strong id="out-soil">--</strong></div>
+              <div class="outcome-metric"><span>Updated Net Profit:</span> <strong id="out-profit">--</strong></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <details class="reference-section" id="methods">
         <summary>How the rotation methods work</summary>
       <section class="section rotation-methods" aria-labelledby="rotation-methods-title">

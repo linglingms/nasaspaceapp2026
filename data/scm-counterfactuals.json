@@ -10,7 +10,8 @@
     ],
     "spatial_resolution": "10 km grid (Eastern Washington)",
     "horizon_periods": 8,
-    "cell_count": 40
+    "cell_count": 40,
+    "trained_at_runtime": true
   },
   "dml_theta_lags": [
     {
@@ -388,7 +389,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 52.0
     },
     {
       "cell_id": "46.19_-118.25",
@@ -697,7 +701,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.1,
+      "baseline_soil_health": 49.7
     },
     {
       "cell_id": "46.19_-118.35",
@@ -1006,7 +1013,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.1,
+      "baseline_soil_health": 47.9
     },
     {
       "cell_id": "46.19_-118.45",
@@ -1315,7 +1325,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 47.6
     },
     {
       "cell_id": "46.19_-119.55",
@@ -1624,7 +1637,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 48.5,
+      "baseline_profit": -83.6,
+      "baseline_soil_health": 47.5
     },
     {
       "cell_id": "46.29_-118.05",
@@ -1933,7 +1949,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 53.5
     },
     {
       "cell_id": "46.29_-118.15",
@@ -2242,7 +2261,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.1,
+      "baseline_soil_health": 50.3
     },
     {
       "cell_id": "46.29_-118.25",
@@ -2551,7 +2573,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.1,
+      "baseline_soil_health": 47.9
     },
     {
       "cell_id": "46.29_-118.35",
@@ -2860,7 +2885,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 47.6
     },
     {
       "cell_id": "46.39_-118.05",
@@ -3169,7 +3197,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 52.5
     },
     {
       "cell_id": "46.59_-117.15",
@@ -3478,7 +3509,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 53.5
     },
     {
       "cell_id": "46.69_-117.25",
@@ -3787,7 +3821,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.1,
+      "baseline_soil_health": 52.4
     },
     {
       "cell_id": "46.79_-117.35",
@@ -4096,7 +4133,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.8,
+      "baseline_soil_health": 51.1
     },
     {
       "cell_id": "46.79_-117.45",
@@ -4405,7 +4445,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.8,
+      "baseline_soil_health": 49.8
     },
     {
       "cell_id": "46.89_-117.15",
@@ -4714,7 +4757,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.7,
+      "baseline_soil_health": 53.5
     },
     {
       "cell_id": "46.89_-117.55",
@@ -5023,7 +5069,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 49.1
     },
     {
       "cell_id": "46.89_-117.75",
@@ -5332,7 +5381,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.8,
+      "baseline_soil_health": 48.1
     },
     {
       "cell_id": "46.89_-118.35",
@@ -5641,7 +5693,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.8,
+      "baseline_soil_health": 47.6
     },
     {
       "cell_id": "46.89_-118.45",
@@ -5950,7 +6005,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.8,
+      "baseline_soil_health": 47.5
     },
     {
       "cell_id": "46.99_-117.15",
@@ -6259,7 +6317,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.8,
+      "baseline_soil_health": 53.9
     },
     {
       "cell_id": "46.99_-117.35",
@@ -6568,7 +6629,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 51.0
     },
     {
       "cell_id": "46.99_-117.45",
@@ -6877,7 +6941,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 49.0
     },
     {
       "cell_id": "47.09_-117.15",
@@ -7186,7 +7253,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.8,
+      "baseline_soil_health": 54.0
     },
     {
       "cell_id": "47.09_-117.25",
@@ -7495,7 +7565,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 52.6
     },
     {
       "cell_id": "47.09_-117.35",
@@ -7804,7 +7877,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 51.3
     },
     {
       "cell_id": "47.09_-117.45",
@@ -8113,7 +8189,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 49.5
     },
     {
       "cell_id": "47.19_-117.15",
@@ -8422,7 +8501,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.7,
+      "baseline_soil_health": 54.5
     },
     {
       "cell_id": "47.19_-117.25",
@@ -8731,7 +8813,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 52.8
     },
     {
       "cell_id": "47.19_-117.35",
@@ -9040,7 +9125,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 52.6
     },
     {
       "cell_id": "47.19_-117.45",
@@ -9349,7 +9437,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 51.3
     },
     {
       "cell_id": "47.29_-117.25",
@@ -9658,7 +9749,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 53.5
     },
     {
       "cell_id": "47.29_-117.45",
@@ -9967,7 +10061,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 52.7
     },
     {
       "cell_id": "47.39_-118.25",
@@ -10276,7 +10373,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.8,
+      "baseline_soil_health": 47.7
     },
     {
       "cell_id": "47.39_-118.35",
@@ -10585,7 +10685,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.8,
+      "baseline_soil_health": 47.8
     },
     {
       "cell_id": "47.59_-118.05",
@@ -10894,7 +10997,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 47.9
     },
     {
       "cell_id": "47.69_-119.05",
@@ -11203,7 +11309,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 47.9
     },
     {
       "cell_id": "47.69_-119.95",
@@ -11512,7 +11621,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 47.5
     },
     {
       "cell_id": "47.69_-120.05",
@@ -11821,7 +11933,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 47.7
     },
     {
       "cell_id": "47.79_-118.85",
@@ -12130,7 +12245,10 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -96.9,
+      "baseline_soil_health": 48.0
     },
     {
       "cell_id": "47.79_-118.95",
@@ -12439,7 +12557,172 @@
             ]
           }
         }
-      }
+      },
+      "baseline_yield": 46.8,
+      "baseline_profit": -97.0,
+      "baseline_soil_health": 47.7
     }
-  ]
+  ],
+  "scm_graph": {
+    "nodes": [
+      {
+        "id": "T2M",
+        "label": "Air Temperature (T2M)",
+        "category": "Climate",
+        "default": 22.5,
+        "min": 10.0,
+        "max": 42.0,
+        "unit": "\u00b0C"
+      },
+      {
+        "id": "vpd_kpa",
+        "label": "Vapor Pressure Deficit (VPD)",
+        "category": "Climate",
+        "default": 1.45,
+        "min": 0.2,
+        "max": 4.0,
+        "unit": "kPa"
+      },
+      {
+        "id": "PRECTOTCORR",
+        "label": "Precipitation / Irrigation",
+        "category": "Management",
+        "default": 3.2,
+        "min": 0.0,
+        "max": 35.0,
+        "unit": "mm/day"
+      },
+      {
+        "id": "rotation_treat",
+        "label": "Crop Rotation / Cover Crop",
+        "category": "Management",
+        "default": 1.0,
+        "min": 0.0,
+        "max": 1.0,
+        "unit": "binary"
+      },
+      {
+        "id": "sm_rootzone",
+        "label": "Root-Zone Soil Moisture",
+        "category": "State",
+        "default": 0.26,
+        "min": 0.08,
+        "max": 0.45,
+        "unit": "m\u00b3/m\u00b3"
+      },
+      {
+        "id": "soil_health",
+        "label": "Soil Health Index",
+        "category": "Outcome",
+        "default": 68.0,
+        "min": 0.0,
+        "max": 100.0,
+        "unit": "index"
+      },
+      {
+        "id": "crop_yield",
+        "label": "Crop Yield",
+        "category": "Outcome",
+        "default": 76.5,
+        "min": 10.0,
+        "max": 150.0,
+        "unit": "bu/ac"
+      },
+      {
+        "id": "prod_cost",
+        "label": "Production Cost",
+        "category": "Economics",
+        "default": 415.0,
+        "min": 150.0,
+        "max": 900.0,
+        "unit": "$/ac"
+      },
+      {
+        "id": "net_return",
+        "label": "Net Profit",
+        "category": "Economics",
+        "default": 94.0,
+        "min": -200.0,
+        "max": 400.0,
+        "unit": "$/ac"
+      }
+    ],
+    "edges": [
+      {
+        "source": "T2M",
+        "target": "vpd_kpa",
+        "weight": 0.85
+      },
+      {
+        "source": "T2M",
+        "target": "crop_yield",
+        "weight": -0.35
+      },
+      {
+        "source": "vpd_kpa",
+        "target": "sm_rootzone",
+        "weight": -0.2
+      },
+      {
+        "source": "vpd_kpa",
+        "target": "crop_yield",
+        "weight": -0.45
+      },
+      {
+        "source": "PRECTOTCORR",
+        "target": "sm_rootzone",
+        "weight": 0.0042
+      },
+      {
+        "source": "rotation_treat",
+        "target": "sm_rootzone",
+        "weight": 0.08
+      },
+      {
+        "source": "rotation_treat",
+        "target": "soil_health",
+        "weight": 3.2
+      },
+      {
+        "source": "rotation_treat",
+        "target": "crop_yield",
+        "weight": 7.5
+      },
+      {
+        "source": "rotation_treat",
+        "target": "prod_cost",
+        "weight": -2.4
+      },
+      {
+        "source": "sm_rootzone",
+        "target": "soil_health",
+        "weight": 25.0
+      },
+      {
+        "source": "sm_rootzone",
+        "target": "crop_yield",
+        "weight": 1.8
+      },
+      {
+        "source": "soil_health",
+        "target": "crop_yield",
+        "weight": 0.06
+      },
+      {
+        "source": "PRECTOTCORR",
+        "target": "prod_cost",
+        "weight": 1.35
+      },
+      {
+        "source": "crop_yield",
+        "target": "net_return",
+        "weight": 6.65
+      },
+      {
+        "source": "prod_cost",
+        "target": "net_return",
+        "weight": -1.0
+      }
+    ]
+  }
 }
