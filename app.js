@@ -594,18 +594,13 @@ function renderCommodityBars(target, items, valueKey, title, unit) {
     target.innerHTML = '<p class="chart-empty-message">No grouped values available for this filter.</p>';
     return;
   }
-  const width = 720;
-  const height = 270;
   const max = Math.max(...items.map((item) => Number(item[valueKey])), 1);
-  const barWidth = (width - 100) / items.length - 18;
-  const bars = items.map((item, index) => {
+  const bars = items.map((item) => {
     const value = Number(item[valueKey]);
-    const barHeight = (value / max) * 185;
-    const x = 56 + index * ((width - 100) / items.length);
-    const y = 210 - barHeight;
-    return `<g><rect class="chart-bar" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4"><title>${item.commodity}: ${formatChartValue(value)} ${unit}</title></rect><text x="${x + barWidth / 2}" y="229" text-anchor="middle">${item.commodity}</text><text class="chart-bar-value" x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle">${formatChartValue(value)}</text></g>`;
+    const barWidth = (value / max) * 100;
+    return `<div class="commodity-bar-row" role="listitem" title="${item.commodity}: ${formatChartValue(value)} ${unit}"><span>${item.commodity}</span><div class="commodity-bar-track"><span style="width: ${barWidth}%"></span></div><strong>${formatChartValue(value)}</strong></div>`;
   }).join("");
-  target.innerHTML = `<svg class="analytics-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}"><line class="axis-line" x1="45" y1="210" x2="${width - 24}" y2="210"></line>${bars}</svg>`;
+  target.innerHTML = `<div class="commodity-bars" role="list" aria-label="${title}">${bars}</div>`;
 }
 
 function renderCommodityAnalytics(data, selected = commodityElements.filter.value) {
