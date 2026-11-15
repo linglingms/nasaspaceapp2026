@@ -442,23 +442,13 @@ function fitOverview(animate = false) {
 }
 farmMap.on("resize", () => fitOverview());
 
-// Label-free basemaps keep Seattle as the only city annotation.
+// Original OpenStreetMap basemap, with terrain and satellite alternatives.
 function createBasemaps() {
   return {
-    Map: L.layerGroup([
-      // Natural-color regional overview; this source ends at zoom 8.
-      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Physical_Map/MapServer/tile/{z}/{y}/{x}", {
-        attribution: 'Tiles &copy; Esri | Source: US National Park Service',
-        maxZoom: 8,
-      }),
-      // Keep terrain detail available when zooming beyond the overview source.
-      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Terrain_Base/MapServer/tile/{z}/{y}/{x}", {
-        attribution: 'Tiles &copy; Esri, USGS, NOAA',
-        minZoom: 9,
-        maxNativeZoom: 13,
-        maxZoom: 18,
-      }),
-    ]),
+    Map: L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+      maxZoom: 18,
+    }),
     Terrain: L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Shaded_Relief/MapServer/tile/{z}/{y}/{x}", {
       attribution:
         'Tiles &copy; Esri, USGS, SRTM',
