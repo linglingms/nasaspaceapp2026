@@ -724,6 +724,8 @@ function renderAnalyticsChart(viewKey = analyticsElements.chartSelector.value) {
       "importance",
       "feature",
     );
+  } else if (viewKey.startsWith("scm-")) {
+    // Handled by SCM viewer plugin logic below
   } else {
     analyticsElements.chartTitle.textContent = "Random Forest test metrics";
     analyticsElements.chartDescription.textContent =
@@ -920,3 +922,187 @@ document.querySelector("#use-area").addEventListener("click", () => {
   areaElements.status.textContent = `${areas[selectedAreaKey].name} is now the focus for the next analysis.`;
   document.querySelector("#survey").scrollIntoView({ behavior: "smooth" });
 });
+
+
+// ============================================================================
+// SPATIOTEMPORAL DML + SCM INTEGRATION (NASA POWER + CDL + NASS + ERS + SSURGO)
+// ============================================================================
+let scmData = null;
+let activeScmCell = null;
+const scmLayerGroup = L.layerGroup().addTo(farmMap);
+
+function nearestScmCell(latitude, longitude) {
+  if (!scmData?.cells?.length) return null;
+  return scmData.cells.reduce((nearest, cell) => {
+    const distance = Math.hypot(
+      latitude - cell.lat,
+      (longitude - cell.lon) * Math.cos((latitude * Math.PI) / 180),
+    );
+    return !nearest || distance < nearest.distance ? { cell, distance } : nearest;
+  }, null)?.cell;
+}
+
+function applyScmCellToSimulator(cell) {
+  if (!cell) return;
+  activeScmCell = cell;
+
+  const mapConfig = [
+    {
+      key: "conventional",
+      name: "Conventional monoculture (CF 1)",
+      waterDemand: "High synthetic N demand",
+    },
+    {
+      key: "cover-crops",
+      name: "Legume / cover rotation (CF 2)",
+      waterDemand: "Moderate (+0.8% moisture retention)",
+    },
+    {
+      key: "alternative",
+      name: "Low-water pulse rotation (CF 3)",
+      waterDemand: "Low–moderate (alternating pulse)",
+    },
+  ];
+
+  mapConfig.forEach(({ key, name, waterDemand }) => {
+    const s = cell.scenarios[key];
+    if (!s || !scenarios[key]) return;
+    const scenario = scenarios[key];
+    scenario.name = name;
+    scenario.moisture = Number(s.mean_sm.toFixed(2));
+    scenario.meter = Math.min(100, Math.round((s.mean_sm / 0.4) * 100));
+    scenario.health = `${s.end_soil_health.toFixed(1)} / 100 (SSURGO+CDL)`;
+    scenario.resilience = `${s.total_yield_bu_ac.toFixed(1)} bu/ac yield`;
+    scenario.waterDemand = `${waterDemand} · Cost: $${s.total_cost_ac.toFixed(0)}/ac`;
+    scenario.soilEffect = `Net Profit: $${s.total_profit_ac.toFixed(2)}/ac (${cell.rotation_3yr})`;
+    scenario.recommendation =
+      key === cell.recommended_strategy
+        ? `SCM Optimal (+$${cell.profit_gain_ac.toFixed(2)}/ac vs monoculture)`
+        : "Counterfactual comparison";
+    scenario.tradeoff =
+      `Heatwave/Drought (35°C at t=4,5) yield: ${cell.scenarios.heatwave_drought.total_yield_bu_ac.toFixed(1)} bu/ac | ` +
+      `>10 km Neighbor Irrigation Spillover SM: ${cell.scenarios.neighbor_spillover.mean_sm.toFixed(3)} m³/m³.`;
+    scenario.explanation =
+      `Parcel ${cell.cell_id} (${cell.county_name} County, ${cell.ers_region}) observed 3-yr CDL rotation: ${cell.rotation_3yr}. ` +
+      `Simulated via Spatiotemporal SCM: Yield = ${s.total_yield_bu_ac.toFixed(1)} bu/ac, Production Cost = $${s.total_cost_ac.toFixed(2)}/ac, ` +
+      `Net Return = $${s.total_profit_ac.toFixed(2)}/ac, Ending Soil Health = ${s.end_soil_health.toFixed(1)}/100.`;
+    scenario.assumptions =
+      "Structural equations populated via Dynamic DML (statspai) on NASA POWER daily agro-climatology, USDA CDL rotations, NASS yields, ERS costs, and NRCS SSURGO soil properties.";
+    scenario.confidence = `Dynamic DML lag-0 weight: ${scmData.dml_theta_lags[0]?.theta ?? 0.0042}`;
+  });
+
+  selectScenario(activeRecommendationKey || cell.recommended_strategy || "cover-crops");
+}
+
+function registerScmChartOptions() {
+  if (!analyticsElements.chartSelector) return;
+  const scmOptions = [
+    { value: "scm-dml-lags", text: "SCM: Dynamic DML moisture lag weights (t-0..t-5)" },
+    { value: "scm-cf-yield", text: "SCM: Counterfactual crop yields across strategies (bu/ac)" },
+    { value: "scm-cf-soil", text: "SCM: Counterfactual ending soil health (0-100 index)" },
+    { value: "scm-cf-trajectory", text: "SCM: Selected parcel 8-period soil health trajectory" },
+  ];
+  scmOptions.forEach(({ value, text }) => {
+    if (!analyticsElements.chartSelector.querySelector(`option[value="${value}"]`)) {
+      const opt = document.createElement("option");
+      opt.value = value;
+      opt.textContent = text;
+      analyticsElements.chartSelector.append(opt);
+    }
+  });
+
+  analyticsElements.chartSelector.addEventListener("change", (event) => {
+    const viewKey = event.target.value;
+    if (!scmData || !viewKey.startsWith("scm-")) return;
+
+    if (viewKey === "scm-dml-lags") {
+      analyticsElements.chartTitle.textContent = "Dynamic DML causal carryover weights (NASA POWER -> Soil Moisture)";
+      analyticsElements.chartDescription.textContent =
+        "Estimated causal effect of PRECTOTCORR (mm) on root-zone soil moisture across lags t-0 to t-5, controlling for VPD, ET0, T2M, and >10 km spatial neighbor spillovers.";
+      renderBarChart(scmData.dml_theta_lags, "theta", "Dynamic DML Lag Weights", "m³/m³ per mm", "lag");
+    } else if (viewKey === "scm-cf-yield") {
+      analyticsElements.chartTitle.textContent = "Spatiotemporal SCM counterfactual crop yields (Eastern WA mean)";
+      analyticsElements.chartDescription.textContent =
+        "Comparison of cumulative wheat-equivalent yield (bu/ac) across baseline monoculture, legume/cover rotation, heatwave shock, and >10 km neighbor spillover.";
+      renderBarChart(scmData.regional_summary, "mean_yield_bu_ac", "Counterfactual Crop Yields", "bu/ac", "label");
+    } else if (viewKey === "scm-cf-soil") {
+      analyticsElements.chartTitle.textContent = "Spatiotemporal SCM counterfactual soil health index (0–100)";
+      analyticsElements.chartDescription.textContent =
+        "Ending soil health index combining USDA NRCS SSURGO organic matter + available water capacity + CDL legume/cover rotation effects.";
+      renderBarChart(scmData.regional_summary, "mean_soil_health", "Counterfactual Soil Health", "index", "label");
+    } else if (viewKey === "scm-cf-trajectory") {
+      const cell = activeScmCell || scmData.cells[0];
+      const shItems = cell.scenarios["cover-crops"].trajectories.soil_health.map((val, idx) => ({
+        period: `t=${idx}`,
+        soil_health: val,
+      }));
+      analyticsElements.chartTitle.textContent = `Parcel ${cell.cell_id} (${cell.county_name}) — 8-period legume rotation soil health trajectory`;
+      analyticsElements.chartDescription.textContent =
+        `Observed 3-yr CDL rotation: ${cell.rotation_3yr} · Net profit gain from legume/cover rotation: +$${cell.profit_gain_ac.toFixed(2)}/ac.`;
+      renderBarChart(shItems, "soil_health", "8-Period Soil Health Trajectory", "score", "period");
+    }
+  });
+}
+
+function loadScmCounterfactualData() {
+  fetch("data/scm-counterfactuals.json")
+    .then((response) => {
+      if (!response.ok) throw new Error(`SCM JSON status: ${response.status}`);
+      return response.json();
+    })
+    .then((data) => {
+      scmData = data;
+      registerScmChartOptions();
+      scmLayerGroup.clearLayers();
+
+      data.cells.forEach((cell) => {
+        const marker = L.circleMarker([cell.lat, cell.lon], {
+          color: "#0f4c35",
+          fillColor: cell.recommended_strategy === "cover-crops" ? "#2e9e5b" : "#d9822b",
+          fillOpacity: 0.85,
+          radius: 7,
+          weight: 2,
+        }).bindPopup(
+          `<strong>10 km SCM Parcel: ${cell.cell_id}</strong><br>` +
+          `County: ${cell.county_name} (${cell.ers_region})<br>` +
+          `3-Yr CDL Rotation: <code>${cell.rotation_3yr}</code><br>` +
+          `Legume/Cover Yield: <strong>${cell.scenarios["cover-crops"].total_yield_bu_ac} bu/ac</strong> vs Monoculture: ${cell.scenarios.conventional.total_yield_bu_ac} bu/ac<br>` +
+          `Legume Net Profit Gain: <strong>+$${cell.profit_gain_ac}/ac</strong><br>` +
+          `Soil Health: ${cell.scenarios["cover-crops"].end_soil_health}/100`,
+        );
+        marker.on("click", () => {
+          applyScmCellToSimulator(cell);
+          areaElements.status.textContent =
+            `Selected 10 km SCM Parcel ${cell.cell_id} (${cell.county_name} County · ${cell.rotation_3yr}).`;
+        });
+        marker.addTo(scmLayerGroup);
+      });
+
+      if (data.cells.length > 0) {
+        applyScmCellToSimulator(data.cells[0]);
+      }
+    })
+    .catch((error) => {
+      console.info("SCM counterfactual JSON not yet generated; run `python scripts/export_scm_to_json.py`.", error);
+    });
+}
+
+// Hook survey map clicks and survey submission into the nearest 10 km SCM parcel
+surveyMap.on("click", (event) => {
+  if (!scmData || !easternWashingtonBounds.contains(event.latlng)) return;
+  const nearestCell = nearestScmCell(event.latlng.lat, event.latlng.lng);
+  if (nearestCell) {
+    applyScmCellToSimulator(nearestCell);
+    survey.locationStatus.textContent =
+      `Marker matched to 10 km SCM Parcel ${nearestCell.cell_id} (${nearestCell.county_name} County · ` +
+      `CDL Rotation: ${nearestCell.rotation_3yr} · Legume Profit Gain: +$${nearestCell.profit_gain_ac}/ac).`;
+  }
+});
+
+survey.next.addEventListener("click", () => {
+  if (survey.currentStep === survey.steps.length && activeScmCell) {
+    window.setTimeout(() => applyScmCellToSimulator(activeScmCell), 60);
+  }
+});
+
+loadScmCounterfactualData();
