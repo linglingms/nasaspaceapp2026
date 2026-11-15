@@ -1,95 +1,239 @@
 # TerraCycle AI
 
-TerraCycle AI is a dependency-free front-end prototype for a farmer-friendly crop
-rotation decision-support tool. The app combines a clear project narrative, an
-interactive region map, two analysis concepts, and a rotation scenario simulator.
+TerraCycle AI is a static NASA Space Apps prototype for exploring climate-aware
+crop rotation decisions in Eastern Washington. It combines NASA POWER climate
+observations, Washington commodities records, an interactive Leaflet map, a
+survey-driven rotation simulator, exploratory statistical models, and clear
+model limitations.
 
-**Open-source repository:** [github.com/linglingms/nasaspaceapp2026](https://github.com/linglingms/nasaspaceapp2026)
+**Repository:** [github.com/linglingms/nasaspaceapp2026](https://github.com/linglingms/nasaspaceapp2026)
 
-## Project purpose
+**Production app:** <https://nasaspaceapp2026causualfarm.vercel.app>
 
-Farmers face increasingly complex decisions as temperatures shift, rainfall becomes
-less predictable, and soil health declines across many regions. Water shortages,
-erosion, nutrient depletion, and extreme weather events add further uncertainty.
-Selecting new crops to add to a rotation can be difficult because a crop that improves
-soil health in one place may consume too much water, introduce disease, conflict with
-local markets, or fall outside expected growing seasons somewhere else.
+## What the app does
 
-This concept is inspired in part by multigenerational farming experience. Many
-families have lived through seasons where better tools for tracking changing
-conditions could have helped identify healthier, more resilient rotation choices.
-NASA's long-term environmental datasets offer new ways to understand local growing
-conditions, while science-informed techniques can translate those observations into
-practical, farmer-friendly insights.
+TerraCycle AI follows this workflow:
 
-The prototype is framed around the NASA Space Apps challenge: use NASA Earth
-observations together with local soil information, crop characteristics, and farmer
-priorities to help farmers explore rotation strategies that could protect fields,
-conserve water, and strengthen long-term resilience.
+1. Select the Eastern Washington focus area and inspect NASA POWER observation
+   points.
+2. Review climate charts, environmental zones, stress-risk summaries, and
+   Random Forest diagnostics.
+3. Explore Washington commodity groups, price records, classification metrics,
+   and price-prediction metrics.
+4. Place a farm marker inside the Eastern Washington survey map.
+5. Answer questions about crops, water, season, priorities, soil, acreage,
+   budget, equipment, and markets.
+6. Compare three rotation strategies using survey inputs and climate context.
 
-## Essential questions
+The application is decision-support research software, not automated farm advice.
 
-The dashboard is organized around three questions:
+## Current geographic scope
 
-1. **What is changing?** How are temperature, rainfall, soil moisture, and vegetation
-   conditions shifting?
-2. **What helps?** Which rotation choices are associated with healthier soil and
-   vegetation under comparable conditions?
-3. **What comes next?** Which options balance water use, growing seasons, disease risk,
-   markets, and farmer priorities?
+The app intentionally contains one focus area: **Eastern Washington**. The top
+focus-area map preserves the original selected-area behavior and displays NASA
+POWER latitude/longitude points. The survey has a separate map with a bounded
+Eastern Washington rectangle where users can place and drag a farm marker.
 
-## Features
+The survey marker:
 
-### Project introduction
+- Stores latitude and longitude in the survey state.
+- Rejects points outside the Eastern Washington boundary.
+- Finds the nearest NASA POWER sample point.
+- Uses the regional stress-risk proxy and selected location in the recommendation
+  explanation.
+- Accepts an address or county as optional text context; the marker is the
+  coordinate used for climate matching.
 
-The top of the dashboard explains the farming challenge, the multigenerational
-inspiration, the NASA connection, and the decision-support purpose before presenting
-the technical workflow.
+The climate dataset currently contains 7,308 usable observations from 2020–2024
+and four sample points at approximately 45.5–48.5°N and 117.5°W.
 
-### NASA Space Apps branding
+## Main app features
 
-The header includes the NASA insignia and a NASA Space Apps prototype label. The
-NASA logo is loaded from NASA's public website.
+### Climate analytics
 
-### Interactive focus-area map
+The app loads [`data/eastern-washington-power.json`](./data/eastern-washington-power.json),
+a compact export generated from the executed NASA POWER notebook. It contains:
 
-The Leaflet/OpenStreetMap map provides three illustrative areas:
+- Monthly temperature, precipitation, solar radiation, and stress-risk series.
+- Coordinate-point metadata and sample observations.
+- Three exploratory K-Means environmental zones.
+- Zone sizes, labels, meanings, and average stress scores.
+- Random Forest feature importance.
+- Accuracy, precision, recall, F1, and confusion-matrix results.
+- Stress-risk proxy mean, median, and maximum.
 
-- Great Plains, USA — wheat, corn, and sorghum; water conservation
-- Central Valley, USA — rice, almonds, and tomatoes; water availability
-- East Africa — maize, beans, and sorghum; rainfall resilience
+The stress score is a transparent proxy built from heat, frost, and low
+precipitation. It is not measured crop stress, yield, soil moisture, or a causal
+effect.
 
-Users can click a map region or an area button to update the selected area's example
-crops, terrain, and planning focus. **Use this area** confirms the selection and moves
-the user into the simulator flow.
+### Environmental zones
 
-These are placeholder regions for demonstrating the interface. They are not live farm
-boundaries, real field measurements, or live NASA data layers yet.
+K-Means groups observations with similar standardized weather features:
 
-### GeoPandas terrain baseline
+- **Cool and dry / frost-prone**
+- **Warm and relatively dry**
+- **Warm and wet / humid**
 
-The repository now includes a baseline terrain-processing workflow in
-[`scripts/terrain_analysis.py`](./scripts/terrain_analysis.py). It accepts a NASA DEM
-GeoTIFF and the example boundaries in [`data/farming_regions.geojson`](./data/farming_regions.geojson),
-then calculates mean/minimum/maximum elevation, mean slope, and the percentage of
-steep terrain. The generated GeoJSON is loaded automatically by the Leaflet map when
-it exists; otherwise the map keeps its placeholder circles.
+These are exploratory climate regimes, not official agroclimate classifications
+or field boundaries.
 
-Install the optional processing dependencies and run:
+### Predictive model
+
+The notebook uses a Random Forest classifier to estimate a next-day
+weather-derived stress proxy. Current holdout results are approximately:
+
+- Accuracy: 89.5%
+- Precision: 78.1%
+- Recall: 63.3%
+- F1: 0.699
+
+The strongest current feature is minimum temperature (`T2M_MIN`). These metrics
+evaluate a proxy target on a chronological holdout; they do not prove future crop
+performance.
+
+### Commodities analytics
+
+[`commodities dataset.ipynb`](./commodities%20dataset.ipynb) loads the external
+`Commodities.numbers` workbook and writes
+[`data/commodities-analytics.json`](./data/commodities-analytics.json).
+
+The app provides:
+
+- A commodity filter and grouped summary table.
+- Record-count and mean-price charts.
+- Variable explanations for `Commodity`, `Data Item`, `Value`, `Period`, `Year`,
+  and `CV (%)`.
+- Commodity classification metrics.
+- Price-prediction metrics.
+
+The current export contains 5,299 usable records across 45 commodity groups.
+
+#### Commodity classification
+
+The selected classification algorithm is **TF-IDF plus Logistic Regression**.
+It predicts the `Commodity` label from structured text in `Data Item`, `Domain`,
+and `Period`. The current test accuracy is approximately 98.8% across 36 retained
+classes. This tests whether the dataset's labels can be recognized; it is not an
+agronomic classifier.
+
+#### Commodity price prediction
+
+The selected predictive algorithm is a **Random Forest Regressor**. It predicts
+numeric `Value` for records whose `Data Item` contains `PRICE RECEIVED`, using
+commodity, year, period, state, and survey metadata.
+
+Current baseline results are approximately:
+
+- MAE: 130.60
+- RMSE: 294.35
+- R²: 0.51
+
+`Value` units vary by `Data Item`, so price values must only be compared within
+the same measure. These results are a baseline, not a financial forecast.
+
+## Survey and rotation simulator
+
+The seven-step survey uses:
+
+1. A bounded Eastern Washington farm marker and optional address/county.
+2. Recent Washington commodities such as wheat, barley, corn, potatoes, beans,
+   peas, onions, and hops.
+3. A seasonal planting window aligned with monthly climate summaries.
+4. Water access: rainfed, partially irrigated, fully irrigated, or unknown.
+5. Up to two priorities: profit, water, soil, risk, and stable yields.
+6. Practical constraints: equipment, markets, cost, crop avoidance, or none.
+7. Field size in acres, soil type, and budget flexibility.
+
+Season and water radio questions advance automatically. The recommendation is
+calculated from:
+
+- Climate stress-risk context.
+- Selected water access and season.
+- Recent commodity categories.
+- Soil type.
+- Field size.
+- Budget, equipment, and market constraints.
+- Farmer priorities.
+
+The simulator compares:
+
+- **Conventional rotation** — baseline comparison with the lowest operational
+  change.
+- **Rotation + cover crops** — soil-cover option with higher establishment demand.
+- **Alternative cover crop mix** — lower-water alternative intended to balance
+  soil protection and establishment risk.
+
+After survey submission, the selected strategy is labeled **Best fit for your
+inputs**. The displayed moisture estimate, fit scores, confidence text, tradeoffs,
+and explanation are recalculated from the survey and climate proxy rather than
+remaining fixed illustrative values.
+
+## Causal analysis status
+
+The interface explains causal analysis as the question:
+
+> Did a cover crop improve the outcome?
+
+A valid causal estimate would require field-level treatment assignment, comparable
+control fields, measured soil-moisture or yield outcomes, management history, and
+uncertainty estimates. The current NASA POWER and commodities files do not contain
+those linked treatment/outcome records. Therefore the app explicitly reports that a
+causal effect is **not estimable from the current datasets** instead of displaying
+a fabricated effect such as `+0.03 soil moisture`.
+
+The predictive analysis is separate: it forecasts a weather-derived proxy and does
+not prove that a rotation caused an outcome.
+
+## Notebook files and data flow
+
+### `dataset experimentation nasa.ipynb`
+
+The NASA POWER notebook:
+
+- Loads `power_df3_c.numbers`.
+- Defines the climate variable meanings.
+- Cleans and validates the dataframe.
+- Calculates heat, frost, dry-condition, and combined stress proxies.
+- Runs K-Means environmental-zone clustering.
+- Runs the Random Forest next-day proxy model.
+- Produces statistical tables, graphs, feature importance, metrics, and
+  conclusions.
+
+### `commodities dataset.ipynb`
+
+The commodities notebook:
+
+- Loads `Commodities.numbers`.
+- Documents the dataset variables.
+- Filters and groups by commodity.
+- Isolates price-received observations.
+- Runs commodity classification.
+- Runs Random Forest price prediction.
+- Produces charts, metrics, predictions, and the app export.
+
+The source `.numbers` workbooks are local research inputs and are not committed
+to this repository. Update the absolute source paths in the notebooks when
+running them on another machine.
+
+## Optional terrain workflow
+
+[`scripts/terrain_analysis.py`](./scripts/terrain_analysis.py) accepts a NASA DEM
+GeoTIFF and GeoJSON boundaries, then calculates elevation, slope, and steep-terrain
+summaries. Optional NASA POWER climate retrieval is also supported.
+
+Install dependencies:
 
 ```bash
 python3 -m pip install -r requirements-terrain.txt
+```
+
+Run terrain processing:
+
+```bash
 python3 scripts/terrain_analysis.py --dem path/to/nasadem.tif
 ```
 
-The DEM is intentionally not committed to the repository because NASA raster files
-are large. Use a NASADEM/SRTM GeoTIFF covering the selected regions. The generated
-`data/terrain-analysis.geojson` is a derived artifact and should be regenerated when
-the DEM or boundaries change.
-
-To add climate analysis, provide a date range. The script queries NASA POWER at
-each region centroid, adds mean temperature and total precipitation, and fits a
-transparent linear trend baseline for the next year:
+Run with the optional climate range:
 
 ```bash
 python3 scripts/terrain_analysis.py \
@@ -98,100 +242,84 @@ python3 scripts/terrain_analysis.py \
   --climate-end 2024-12-31
 ```
 
-The climate fields are exploratory baselines, not validated forecasts. For a
-production predictive model, use the exported climate fields alongside field
-management, soil, and satellite features in a time-aware training pipeline.
-Only expose predictions when a held-out evaluation set supports them, and display
-uncertainty and sample size next to each estimate.
-
-### Two analysis engines
-
-- **Causal analysis — Why?** Compares fields with and without a strategy while
-  accounting for environmental and management differences.
-- **Predictive analysis — What next?** Uses historical environmental patterns to
-  forecast future soil moisture and vegetation conditions.
-
-The page also includes an empty chart and schema scaffold for future integration.
-The planned data model includes field identifiers, observation dates, soil moisture,
-rainfall, rotation method, vegetation index, elevation, slope, soil type, crop stage,
-irrigation, and uncertainty. The blank chart is intentionally not presented as a
-real forecast until validated NASA and local field data are connected.
-
-The interface keeps methods such as causal inference, causal forests, Random Forest,
-and XGBoost in the background so the primary user flow remains understandable.
-
-### Rotation scenario simulator
-
-The simulator compares three illustrative strategies:
-
-- Conventional rotation
-- Rotation plus cover crops
-- Alternative cover crop mix
-
-It displays estimated soil moisture, vegetation health, drought resilience, and a
-confidence label. All values are explicitly illustrative placeholders.
-
-The page also explains how each method works in practice: the conventional sequence,
-cover-crop timing and termination, and the species-selection and management tradeoffs
-of an alternative cover-crop mix. These explanations are educational context, not
-prescriptions for a particular farm.
+Large NASA raster files are intentionally not committed.
 
 ## Technology
 
 - HTML, CSS, and vanilla JavaScript
-- Leaflet 1.9.4 for the interactive map
-- Optional GeoPandas, Rasterio, and NumPy terrain preprocessing
+- Leaflet 1.9.4 for both map views
 - OpenStreetMap tiles and attribution
-- No package installation or build step
-- Vercel-compatible static deployment
+- Python, pandas, NumPy, scikit-learn, Matplotlib, and `numbers-parser` for
+  notebook experiments
+- Optional GeoPandas and Rasterio for terrain processing
+- Static Vercel deployment
+
+There is no frontend build step or package manifest. Leaflet is loaded from a
+public CDN.
 
 ## Run locally
 
-Open [index.html](./index.html) in a browser. Because the map uses public CDN assets,
-an internet connection is needed for the Leaflet library and map tiles.
-
-For a local HTTP server, use any static server, for example:
+From the repository root:
 
 ```bash
 python3 -m http.server 8000
 ```
 
-Then open <http://localhost:8000>.
+Open <http://localhost:8000>.
 
-## Deployment with Vercel
+Use an HTTP server rather than opening `index.html` directly so JSON data files,
+Leaflet assets, and notebook-derived exports load correctly.
 
-The site is configured as a static Vercel project through
-[vercel.json](./vercel.json). To deploy:
+## Deploy with Vercel
 
-1. Sign in at [vercel.com/new](https://vercel.com/new).
-2. Import `linglingms/nasaspaceapp2026` from GitHub.
-3. Use **Other** as the framework preset.
-4. Leave the build command empty and set the output directory to `.`.
-5. Select **Deploy**.
+The project is configured as a static site through [`vercel.json`](./vercel.json).
+To deploy manually:
 
-Once the repository is connected, future pushes to `main` deploy automatically.
+```bash
+npx vercel --prod
+```
 
-## Data and modeling disclaimer
+The current production alias is:
 
-This repository currently contains a user-interface prototype, not a validated
-agricultural model. Before real-world use, the illustrative values and placeholder
-areas must be replaced with validated NASA and local datasets, field boundaries,
-appropriate uncertainty intervals, model evaluation, and locally relevant agronomic
-and farmer-priority inputs. The interface is decision support, not automated farm
-advice.
+<https://nasaspaceapp2026causualfarm.vercel.app>
 
-## Validation and project history
+## Validation
 
-The project has been validated with:
+Useful checks after changing the app:
 
-- `node --check app.js`
-- `git diff --check`
+```bash
+node --check app.js
+python3 -m json.tool data/eastern-washington-power.json
+python3 -m json.tool data/commodities-analytics.json
+git diff --check
+```
 
-Recent project milestones:
+To re-execute the notebooks:
 
-- Built the initial TerraCycle AI dashboard and rotation simulator
-- Added the NASA Space Apps challenge purpose and essential questions
-- Added the NASA insignia to the header
-- Added the interactive crop and terrain focus-area map
-- Switched deployment guidance from GitHub Pages to Vercel
-- Added the centered open-source repository link to the dashboard header
+```bash
+jupyter nbconvert --to notebook --execute --inplace \
+  "dataset experimentation nasa.ipynb" \
+  --ExecutePreprocessor.timeout=600
+
+jupyter nbconvert --to notebook --execute --inplace \
+  "commodities dataset.ipynb" \
+  --ExecutePreprocessor.timeout=600
+```
+
+## Limitations and responsible use
+
+This is an exploratory prototype. It does not provide validated crop-yield
+forecasts, measured soil-moisture predictions, causal treatment effects, or
+guaranteed commodity prices.
+
+Before real-world use, the project needs:
+
+- Field-level treatment and outcome data for causal inference.
+- Soil, irrigation, management, and crop-stage records.
+- Satellite vegetation indices such as NDVI.
+- Time-aware validation across seasons and locations.
+- Uncertainty intervals, sample sizes, and calibration checks.
+- Agronomic review and farmer testing.
+
+Use the app to understand data relationships and compare hypotheses, not as a
+substitute for local agronomic, financial, or operational advice.
