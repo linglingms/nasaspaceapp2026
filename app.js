@@ -297,6 +297,7 @@ function showSurveyRecommendation() {
 }
 
 function resetSurvey() {
+  if (!window.confirm("Reset all survey inputs? This will clear your answers, farm marker, and recommendation. This cannot be undone.")) return;
   survey.form.reset();
   survey.latitude.value = "";
   survey.longitude.value = "";
