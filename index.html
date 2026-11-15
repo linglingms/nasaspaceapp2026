@@ -85,7 +85,7 @@
             </p>
             <div class="area-facts">
               <div><span>Example crops</span><strong id="area-crops">Wheat analysis dataset</strong></div>
-              <div><span>Terrain</span><strong id="area-terrain">Dataset points · Coordinates loaded from NASA POWER export</strong></div>
+              <div><span>Sampling locations</span><strong id="area-terrain">Dataset points · Coordinates loaded from NASA POWER export</strong></div>
               <div><span>Focus</span><strong id="area-focus">Climate analytics</strong></div>
             </div>
             <button class="button button-primary area-button" id="use-area" type="button">Use this area</button>
@@ -233,21 +233,21 @@
         <div class="simulator">
           <div class="strategy-list" role="group" aria-label="Rotation strategies">
             <button class="strategy active" data-strategy="conventional" aria-pressed="true">
-              <span><strong>Conventional rotation</strong></span>
+              <span><strong>Conventional monoculture (CF 1)</strong></span>
               <span class="strategy-value">0.15</span>
             </button>
             <button class="strategy" data-strategy="cover-crops" aria-pressed="false">
-              <span><strong>Rotation + cover crops</strong></span>
+              <span><strong>Legume / cover rotation (CF 2)</strong></span>
               <span class="strategy-value">0.19</span>
             </button>
             <button class="strategy" data-strategy="alternative" aria-pressed="false">
-              <span><strong>Alternative cover crop mix</strong></span>
+              <span><strong>Low-water pulse rotation (CF 3)</strong></span>
               <span class="strategy-value">0.18</span>
             </button>
           </div>
           <div class="scenario-result">
             <div class="result-header">
-              <div><h3 id="selected-strategy">Conventional rotation</h3></div>
+              <div><h3 id="selected-strategy">Conventional monoculture (CF 1)</h3></div>
               <span id="recommendation" class="recommendation neutral">Baseline</span>
             </div>
             <div class="meter-row"><span>Estimated soil moisture</span><strong id="moisture-value">0.15</strong></div>
@@ -296,7 +296,7 @@
         </div>
         <div class="method-grid">
           <article class="method-card">
-            <h3>Conventional rotation</h3>
+            <h3>Conventional monoculture (CF 1)</h3>
             <p>
               The farmer follows the established cash-crop sequence and manages the
               field mainly around planting and harvest.
@@ -312,7 +312,7 @@
             </div>
           </article>
           <article class="method-card method-card-highlight">
-            <h3>Rotation + cover crops</h3>
+            <h3>Legume / cover rotation (CF 2)</h3>
             <p>
               A cover crop is planted between cash crops so living roots and residue
               protect the soil during otherwise uncovered periods.
@@ -328,7 +328,7 @@
             </div>
           </article>
           <article class="method-card">
-            <h3>Alternative cover crop mix</h3>
+            <h3>Low-water pulse rotation (CF 3)</h3>
             <p>
               A locally adapted mix combines species with different rooting depths,
               water needs, and nutrient roles to balance protection with risk.
@@ -536,7 +536,7 @@
         </article>
         <article class="analysis-card predictive-card">
           <h3>Predictive analysis</h3>
-          <p class="question">What conditions should we expect next season?</p>
+          <p class="question">What is tomorrow's weather-related stress risk?</p>
           <p>
             Predictive analysis learns patterns from past observations to estimate
             future conditions. It forecasts risk; it does not prove that a strategy

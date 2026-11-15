@@ -1,6 +1,6 @@
 const scenarios = {
   conventional: {
-    name: "Conventional rotation",
+    name: "Conventional monoculture (CF 1)",
     moisture: 0.15,
     meter: 50,
     health: "At risk",
@@ -16,7 +16,7 @@ const scenarios = {
     confidence: "Illustrative baseline",
   },
   "cover-crops": {
-    name: "Rotation + cover crops",
+    name: "Legume / cover rotation (CF 2)",
     moisture: 0.19,
     meter: 76,
     health: "Stable",
@@ -32,7 +32,7 @@ const scenarios = {
     confidence: "Illustrative, moderate confidence",
   },
   alternative: {
-    name: "Alternative cover crop mix",
+    name: "Low-water pulse rotation (CF 3)",
     moisture: 0.18,
     meter: 68,
     health: "Stable",
@@ -376,6 +376,9 @@ function selectScenario(key) {
   elements.waterDemand.textContent = scenario.waterDemand;
   elements.soilEffect.textContent = scenario.soilEffect;
   elements.tradeoff.textContent = scenario.tradeoff;
+  elements.tradeoff.previousElementSibling.textContent = scenario.metricLabels
+    ? "Drought & irrigation scenarios"
+    : "Primary tradeoff";
   elements.explanation.textContent = scenario.explanation;
   elements.assumptions.textContent = scenario.assumptions;
   elements.confidence.textContent = scenario.confidence;
