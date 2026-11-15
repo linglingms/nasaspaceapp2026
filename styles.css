@@ -327,7 +327,6 @@ input::placeholder { color: var(--muted); opacity: 1; }
   .hero-actions { gap: 12px 20px; }
   .survey-card, .data-card, .analysis-card, .scenario-result { padding: 20px; }
   .survey-options-grid { grid-template-columns: minmax(0, 1fr); }
-  .survey-map { height: 260px; }
   .result-header h3 { font-size: 1.4rem; }
   .survey-score { flex-direction: column; gap: 4px; }
   .outcome-grid { gap: 24px 16px; }
@@ -377,7 +376,7 @@ input::placeholder { color: var(--muted); opacity: 1; }
 .map-caption { border-top: 1px solid var(--line); }
 @media (max-width: 760px) {
   .map-legend { position: static; display: flex; flex-wrap: wrap; gap: 6px 14px; margin: 0; border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; background: transparent; padding: 10px 14px; font-size: .72rem; }
-  .map-card .leaflet-top.leaflet-right, .survey-map .leaflet-top.leaflet-right { top: auto; bottom: 22px; }
+  .map-card .leaflet-top.leaflet-right { top: auto; bottom: 22px; }
   .map-label { display: none; }
 }
 .county-label { pointer-events: none; }

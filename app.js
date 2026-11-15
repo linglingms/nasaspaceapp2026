@@ -91,7 +91,6 @@ const survey = {
 };
 let surveyMap = null;
 let activeRecommendationKey = null;
-let surveyAdvanceTimer;
 
 function checkedValues(name) {
   return [...survey.form.querySelectorAll(`input[name="${name}"]:checked`)].map((input) => input.value);
@@ -115,7 +114,6 @@ function readSurveyAnswers() {
 }
 
 function showSurveyStep(step) {
-  window.clearTimeout(surveyAdvanceTimer);
   survey.currentStep = step;
   survey.steps.forEach((field, index) => {
     const active = index + 1 === step;
@@ -328,7 +326,6 @@ function resetSurvey() {
 }
 
 survey.reset.addEventListener("click", () => {
-  window.clearTimeout(surveyAdvanceTimer);
   survey.resetDialog.returnValue = "";
   survey.resetDialog.showModal();
 });
@@ -336,10 +333,6 @@ survey.resetDialog.addEventListener("close", () => {
   if (survey.resetDialog.returnValue === "reset") resetSurvey();
 });
 survey.form.addEventListener("change", (event) => {
-  if (event.target.type === "radio" && [3, 4].includes(survey.currentStep)) {
-    window.clearTimeout(surveyAdvanceTimer);
-    surveyAdvanceTimer = window.setTimeout(() => showSurveyStep(Math.min(survey.steps.length, survey.currentStep + 1)), 220);
-  }
   if (event.target.name === "priorities") {
     const priorities = survey.form.querySelectorAll('input[name="priorities"]:checked');
     if (priorities.length > 2) {
@@ -502,7 +495,7 @@ const farmLayerControl = addBasemaps(farmMap, powerPointsLayer);
 L.control.scale({ imperial: true, metric: true, position: "bottomleft" }).addTo(farmMap);
 
 surveyMap = L.map("survey-map", { scrollWheelZoom: false }).fitBounds(easternWashingtonBounds);
-surveyMap.setMaxBounds(easternWashingtonBounds);
+// Restrict valid farm locations, not the viewport: popup panning must not bounce back.
 const surveyPointsLayer = L.layerGroup();
 addBasemaps(surveyMap, surveyPointsLayer);
 // Dim everything outside the survey boundary so the allowed area reads at a glance.
@@ -546,24 +539,61 @@ function nearestPowerPoint(latitude, longitude) {
 }
 
 function setSurveyLocation(latitude, longitude) {
+  surveyMap.stop();
   survey.latitude.value = latitude.toFixed(5);
   survey.longitude.value = longitude.toFixed(5);
   if (!surveyLocationMarker) {
     surveyLocationMarker = L.marker([latitude, longitude], { draggable: true, icon: farmMarkerIcon, title: "Your farm" }).addTo(surveyMap);
+    surveyLocationMarker.bindPopup("", { autoPan: false, keepInView: false });
+    surveyLocationMarker.on("popupopen", positionSurveyLocationPopup);
+    surveyLocationMarker.on("dragstart", () => {
+      surveyMap.stop();
+      surveyLocationMarker.closePopup();
+    });
     surveyLocationMarker.on("dragend", (event) => {
       const position = event.target.getLatLng();
       if (easternWashingtonBounds.contains(position)) setSurveyLocation(position.lat, position.lng);
-      else surveyLocationMarker.setLatLng([Number(survey.latitude.value), Number(survey.longitude.value)]);
+      else {
+        surveyLocationMarker.setLatLng([Number(survey.latitude.value), Number(survey.longitude.value)]);
+        showSurveyLocationPopup();
+      }
     });
   } else {
+    surveyLocationMarker.closePopup();
     surveyLocationMarker.setLatLng([latitude, longitude]);
   }
   const nearest = nearestPowerPoint(latitude, longitude);
   survey.locationStatus.textContent = nearest
     ? `Marker set at ${latitude.toFixed(3)}°N, ${longitude.toFixed(3)}°W. Nearest NASA POWER point: ${nearest.point.lat}°N, ${nearest.point.lon}°W.`
     : `Marker set at ${latitude.toFixed(3)}°N, ${longitude.toFixed(3)}°W. Climate point details will load with the dataset.`;
-  surveyLocationMarker.bindPopup(`<strong>Farm marker</strong><br>Latitude: ${latitude.toFixed(3)}<br>Longitude: ${longitude.toFixed(3)}`, { autoPanPaddingTopLeft: [12, 64], autoPanPaddingBottomRight: [12, 12] }).openPopup();
+  showSurveyLocationPopup();
   syncScmSurveyLocation(latitude, longitude);
+}
+
+function showSurveyLocationPopup() {
+  const { lat, lng } = surveyLocationMarker.getLatLng();
+  surveyLocationMarker.setPopupContent(`<strong>Farm marker</strong><br>Latitude: ${lat.toFixed(3)}<br>Longitude: ${lng.toFixed(3)}`).openPopup();
+}
+
+function positionSurveyLocationPopup() {
+  const container = surveyMap.getContainer();
+  const mapRect = container.getBoundingClientRect();
+  const popup = surveyLocationMarker.getPopup();
+  const popupRect = popup.getElement().getBoundingClientRect();
+  const left = Math.max(mapRect.left + 12, Math.min(popupRect.left, mapRect.right - popupRect.width - 12));
+  const right = left + popupRect.width;
+  const controlsBottom = Math.max(0, ...[...container.querySelectorAll(".leaflet-top .leaflet-control")]
+    .map((control) => control.getBoundingClientRect())
+    .filter((rect) => rect.left < right && rect.right > left)
+    .map((rect) => rect.bottom - mapRect.top));
+  // Measure first, then let Leaflet pan once; reserve only controls in the popup's path.
+  // Leave space below the pin for the next selection without crowding the popup.
+  popup.options.autoPanPaddingTopLeft = L.point(12, Math.max(12, controlsBottom + 12));
+  const bottomSpace = mapRect.height - popup.options.autoPanPaddingTopLeft.y - popupRect.height - 12;
+  popup.options.autoPanPaddingBottomRight = L.point(12, Math.min(140, Math.max(60, bottomSpace)));
+  popup.options.autoPan = true;
+  popup.update();
+  popup.options.autoPan = false;
 }
 
 function handleSurveyMapClick(event) {

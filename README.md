@@ -144,7 +144,7 @@ The seven-step survey uses:
 6. Practical constraints: equipment, markets, cost, crop avoidance, or none.
 7. Field size in acres, soil type, and budget flexibility.
 
-Season and water radio questions advance automatically. The recommendation is
+All questions stay on the current step until the user clicks Next question or See recommendation. The recommendation is
 calculated from:
 
 - Climate stress-risk context.
