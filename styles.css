@@ -182,6 +182,8 @@ h3 { margin-bottom: 8px; font-size: 1.2rem; }
 .survey-help { margin-bottom: 20px; color: var(--muted); font-size: .88rem; }
 .survey-step > label:not(.survey-options label) { display: block; margin: 14px 0 6px; color: var(--green-dark); font-size: .8rem; font-weight: 700; }
 .survey-step input[type="text"], .survey-step select { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: white; font: inherit; }
+.survey-step input[type="number"] { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: white; font: inherit; }
+.input-unit { display: block; margin-top: -8px; color: var(--muted); font-size: .75rem; }
 .survey-options { display: grid; gap: 10px; }
 .survey-options-grid { grid-template-columns: 1fr 1fr; }
 .survey-options label { display: flex; gap: 9px; align-items: flex-start; padding: 11px 12px; border: 1px solid var(--line); border-radius: 8px; color: var(--muted); font-size: .88rem; cursor: pointer; }

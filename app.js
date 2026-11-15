@@ -77,6 +77,9 @@ const survey = {
   scoreList: document.querySelector("#survey-score-list"),
   edit: document.querySelector("#survey-edit"),
   priorityLimit: document.querySelector("#priority-limit"),
+  locationStatus: document.querySelector("#survey-location-status"),
+  latitude: document.querySelector("#farm-latitude"),
+  longitude: document.querySelector("#farm-longitude"),
   currentStep: 1,
 };
 
@@ -88,6 +91,8 @@ function readSurveyAnswers() {
   const formData = new FormData(survey.form);
   return {
     location: formData.get("location")?.trim() || "",
+    latitude: Number(formData.get("latitude")) || null,
+    longitude: Number(formData.get("longitude")) || null,
     pastCrops: checkedValues("pastCrops"),
     season: formData.get("season") || "",
     water: formData.get("water") || "",
@@ -117,6 +122,10 @@ function validateSurveyStep() {
   const required = current.querySelector("[required]");
   if (required && !required.checkValidity()) {
     required.reportValidity();
+    return false;
+  }
+  if (survey.currentStep === 1 && (!survey.latitude.value || !survey.longitude.value)) {
+    survey.locationStatus.textContent = "Place a marker inside the Eastern Washington boundary before continuing.";
     return false;
   }
   if (survey.currentStep === 5 && checkedValues("priorities").length === 0) {
@@ -201,6 +210,9 @@ function showSurveyRecommendation() {
 }
 
 survey.form.addEventListener("change", (event) => {
+  if (event.target.type === "radio" && [3, 4].includes(survey.currentStep)) {
+    window.setTimeout(() => showSurveyStep(Math.min(survey.steps.length, survey.currentStep + 1)), 220);
+  }
   if (event.target.name === "priorities") {
     const priorities = survey.form.querySelectorAll('input[name="priorities"]:checked');
     if (priorities.length > 2) {
@@ -268,6 +280,9 @@ const areas = {
   },
 };
 
+const easternWashingtonBounds = L.latLngBounds([45.5, -121.8], [49.1, -116.8]);
+let surveyLocationMarker;
+
 const areaElements = {
   name: document.querySelector("#area-panel-name"),
   description: document.querySelector("#area-panel-description"),
@@ -288,6 +303,13 @@ const farmMap = L.map("farm-map", { scrollWheelZoom: false }).setView(
   areas[selectedAreaKey].coordinates,
   areas[selectedAreaKey].zoom,
 );
+farmMap.setMaxBounds(easternWashingtonBounds);
+L.rectangle(easternWashingtonBounds, {
+  color: "#12543a",
+  weight: 2,
+  dashArray: "6 6",
+  fill: false,
+}).addTo(farmMap).bindTooltip("Eastern Washington survey boundary");
 
 L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
@@ -295,6 +317,44 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
 }).addTo(farmMap);
 
 powerPointsLayer = L.layerGroup().addTo(farmMap);
+
+function nearestPowerPoint(latitude, longitude) {
+  if (!powerData?.points?.length) return null;
+  return powerData.points.reduce((nearest, point) => {
+    const distance = Math.hypot(latitude - point.lat, (longitude - point.lon) * Math.cos((latitude * Math.PI) / 180));
+    return !nearest || distance < nearest.distance ? { point, distance } : nearest;
+  }, null);
+}
+
+function setSurveyLocation(latitude, longitude) {
+  survey.latitude.value = latitude.toFixed(5);
+  survey.longitude.value = longitude.toFixed(5);
+  if (!surveyLocationMarker) {
+    surveyLocationMarker = L.marker([latitude, longitude], { draggable: true }).addTo(farmMap);
+    surveyLocationMarker.on("dragend", (event) => {
+      const position = event.target.getLatLng();
+      if (easternWashingtonBounds.contains(position)) setSurveyLocation(position.lat, position.lng);
+      else surveyLocationMarker.setLatLng([latitude, longitude]);
+    });
+  } else {
+    surveyLocationMarker.setLatLng([latitude, longitude]);
+  }
+  const nearest = nearestPowerPoint(latitude, longitude);
+  survey.locationStatus.textContent = nearest
+    ? `Marker set at ${latitude.toFixed(3)}°N, ${longitude.toFixed(3)}°W. Nearest NASA POWER point: ${nearest.point.lat}°N, ${nearest.point.lon}°W.`
+    : `Marker set at ${latitude.toFixed(3)}°N, ${longitude.toFixed(3)}°W. Climate point details will load with the dataset.`;
+  surveyLocationMarker.bindPopup(`<strong>Farm marker</strong><br>Latitude: ${latitude.toFixed(3)}<br>Longitude: ${longitude.toFixed(3)}`).openPopup();
+}
+
+function handleSurveyMapClick(event) {
+  if (!easternWashingtonBounds.contains(event.latlng)) {
+    survey.locationStatus.textContent = "Choose a point inside the Eastern Washington boundary.";
+    return;
+  }
+  setSurveyLocation(event.latlng.lat, event.latlng.lng);
+}
+
+farmMap.on("click", handleSurveyMapClick);
 
 const analyticsElements = {
   chart: document.querySelector("#analytics-chart"),
