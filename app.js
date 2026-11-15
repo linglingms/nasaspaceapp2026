@@ -291,6 +291,16 @@ const areas = {
     coordinates: [0.3, 36.8],
     zoom: 5,
   },
+  "eastern-washington": {
+    name: "Eastern Washington data",
+    description:
+      "NASA POWER sample data labeled Eastern Washington in the notebook. The source coordinates currently resolve to Iowa, so verify the export before geographic interpretation.",
+    crops: "Wheat analysis dataset",
+    terrain: "Dataset points · Coordinates loaded from NASA POWER export",
+    focus: "Climate analytics",
+    coordinates: [42.5, -92.5],
+    zoom: 7,
+  },
 };
 
 const areaElements = {
@@ -306,6 +316,8 @@ const areaElements = {
 let selectedAreaKey = "great-plains";
 const areaLayers = {};
 const terrainLayers = {};
+let powerData = null;
+let powerPointsLayer;
 const farmMap = L.map("farm-map", { scrollWheelZoom: false }).setView(
   areas[selectedAreaKey].coordinates,
   areas[selectedAreaKey].zoom,
@@ -315,6 +327,195 @@ L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
   maxZoom: 18,
 }).addTo(farmMap);
+
+powerPointsLayer = L.layerGroup().addTo(farmMap);
+
+const analyticsElements = {
+  chart: document.querySelector("#analytics-chart"),
+  chartTitle: document.querySelector("#chart-title"),
+  chartDescription: document.querySelector("#chart-description"),
+  chartSelector: document.querySelector("#chart-selector"),
+  dataStatus: document.querySelector("#data-status"),
+  tableStatus: document.querySelector("#table-status"),
+  tableBody: document.querySelector("#analytics-table-body"),
+  datasetNote: document.querySelector("#dataset-note"),
+};
+
+const chartViews = {
+  "monthly-temperature": {
+    title: "Monthly temperature",
+    description: "Monthly mean air temperature at 2 meters from the NASA POWER export.",
+    dataKey: "mean_temperature_c",
+    unit: "°C",
+  },
+  "monthly-precipitation": {
+    title: "Monthly precipitation",
+    description: "Monthly total corrected precipitation from the NASA POWER export.",
+    dataKey: "total_precipitation_mm",
+    unit: "mm",
+  },
+  "monthly-stress": {
+    title: "Monthly stress-risk proxy",
+    description: "Exploratory weighted proxy combining heat, frost, and low precipitation.",
+    dataKey: "mean_stress_risk",
+    unit: "score",
+  },
+  "monthly-solar": {
+    title: "Monthly solar radiation",
+    description: "Monthly mean all-sky surface shortwave radiation.",
+    dataKey: "mean_solar_radiation",
+    unit: "kWh/m²/day",
+  },
+};
+
+function formatChartValue(value) {
+  return Number(value).toFixed(value < 1 ? 2 : 1);
+}
+
+function renderLineChart(view) {
+  const width = 720;
+  const height = 270;
+  const padding = { top: 24, right: 24, bottom: 42, left: 52 };
+  const values = powerData.monthly.map((entry) => Number(entry[view.dataKey]));
+  const min = Math.min(...values);
+  const max = Math.max(...values);
+  const range = max - min || 1;
+  const x = (index) =>
+    padding.left + (index * (width - padding.left - padding.right)) / Math.max(values.length - 1, 1);
+  const y = (value) =>
+    height - padding.bottom - ((value - min) / range) * (height - padding.top - padding.bottom);
+  const points = values.map((value, index) => `${x(index)},${y(value)}`).join(" ");
+  const labels = powerData.monthly
+    .filter((_, index) => index % 12 === 0 || index === powerData.monthly.length - 1)
+    .map((entry) => {
+      const index = powerData.monthly.indexOf(entry);
+      return `<text x="${x(index)}" y="${height - 13}" text-anchor="middle">${entry.month}</text>`;
+    })
+    .join("");
+  const dots = values
+    .map(
+      (value, index) =>
+        `<circle cx="${x(index)}" cy="${y(value)}" r="2.5"><title>${powerData.monthly[index].month}: ${formatChartValue(value)} ${view.unit}</title></circle>`,
+    )
+    .join("");
+  analyticsElements.chart.innerHTML = `
+    <svg class="analytics-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${view.title}">
+      <line class="axis-line" x1="${padding.left}" y1="${height - padding.bottom}" x2="${width - padding.right}" y2="${height - padding.bottom}"></line>
+      <line class="axis-line" x1="${padding.left}" y1="${padding.top}" x2="${padding.left}" y2="${height - padding.bottom}"></line>
+      <polyline class="chart-line" points="${points}"></polyline>
+      <g class="chart-dots">${dots}</g>
+      <text class="chart-axis-label" x="12" y="${padding.top}">${formatChartValue(max)}</text>
+      <text class="chart-axis-label" x="12" y="${height - padding.bottom}">${formatChartValue(min)}</text>
+      <g class="chart-labels">${labels}</g>
+    </svg>`;
+}
+
+function renderBarChart(items, valueKey, title, unit, labelKey) {
+  const width = 720;
+  const height = 270;
+  const max = Math.max(...items.map((item) => Number(item[valueKey])), 1);
+  const barWidth = (width - 100) / items.length - 18;
+  const bars = items
+    .map((item, index) => {
+      const value = Number(item[valueKey]);
+      const barHeight = (value / max) * 185;
+      const x = 56 + index * ((width - 100) / items.length);
+      const y = 210 - barHeight;
+      const label = item[labelKey] || item.feature;
+      return `<g><rect class="chart-bar" x="${x}" y="${y}" width="${barWidth}" height="${barHeight}" rx="4"><title>${label}: ${formatChartValue(value)} ${unit}</title></rect><text x="${x + barWidth / 2}" y="229" text-anchor="middle">${label}</text><text class="chart-bar-value" x="${x + barWidth / 2}" y="${y - 7}" text-anchor="middle">${formatChartValue(value)}</text></g>`;
+    })
+    .join("");
+  analyticsElements.chart.innerHTML = `
+    <svg class="analytics-svg" viewBox="0 0 ${width} ${height}" role="img" aria-label="${title}">
+      <line class="axis-line" x1="45" y1="210" x2="${width - 24}" y2="210"></line>
+      ${bars}
+    </svg>`;
+}
+
+function renderAnalyticsChart(viewKey = analyticsElements.chartSelector.value) {
+  if (!powerData) {
+    analyticsElements.chart.innerHTML =
+      '<p class="chart-empty-message">Select Eastern Washington data to load NASA POWER analytics.</p>';
+    return;
+  }
+  const view = chartViews[viewKey];
+  if (view) {
+    analyticsElements.chartTitle.textContent = view.title;
+    analyticsElements.chartDescription.textContent = view.description;
+    renderLineChart(view);
+  } else if (viewKey === "zones") {
+    analyticsElements.chartTitle.textContent = "Environmental zones";
+    analyticsElements.chartDescription.textContent =
+      "K-Means climate regimes derived from the notebook analysis.";
+    renderBarChart(powerData.zones, "mean_stress_risk", "Environmental zones", "score", "zone");
+  } else {
+    analyticsElements.chartTitle.textContent = "Random Forest feature importance";
+    analyticsElements.chartDescription.textContent =
+      "Features ranked by importance in the exploratory next-day stress proxy model.";
+    renderBarChart(
+      powerData.feature_importance,
+      "importance",
+      "Random Forest feature importance",
+      "importance",
+      "feature",
+    );
+  }
+}
+
+function renderPowerData(data) {
+  powerData = data;
+  analyticsElements.dataStatus.textContent = `${data.metadata.observation_count.toLocaleString()} observations loaded`;
+  analyticsElements.tableStatus.textContent = `${data.points.length} coordinate points`;
+  analyticsElements.datasetNote.textContent = `${data.metadata.date_start} to ${data.metadata.date_end}. ${data.metadata.coordinate_note}`;
+  analyticsElements.tableBody.innerHTML = data.sample_rows
+    .map(
+      (row) =>
+        `<tr><td>${row.LAT}</td><td>${row.LON}</td><td>${row.date}</td><td>${row.T2M.toFixed(2)}°C</td><td>${row.PRECTOTCORR.toFixed(2)}</td></tr>`,
+    )
+    .join("");
+  renderAnalyticsChart();
+}
+
+function loadPowerData() {
+  if (powerData) {
+    renderAnalyticsChart();
+    return;
+  }
+  fetch("data/eastern-washington-power.json")
+    .then((response) => {
+      if (!response.ok) throw new Error(`NASA POWER analytics request failed: ${response.status}`);
+      return response.json();
+    })
+    .then((data) => {
+      renderPowerData(data);
+      powerPointsLayer.clearLayers();
+      const bounds = [];
+      data.points.forEach((point) => {
+        const marker = L.circleMarker([point.lat, point.lon], {
+          color: "#12543a",
+          fillColor: "#f1b84b",
+          fillOpacity: 0.9,
+          radius: 8,
+          weight: 2,
+        }).bindPopup(
+          `<strong>NASA POWER data point</strong><br>Latitude: ${point.lat}<br>Longitude: ${point.lon}<br>Observations: ${point.observations}<br>${point.date_start} to ${point.date_end}`,
+        );
+        marker.addTo(powerPointsLayer);
+        bounds.push([point.lat, point.lon]);
+      });
+      if (bounds.length) farmMap.fitBounds(bounds, { padding: [35, 35] });
+      areaElements.status.textContent = `NASA POWER loaded: ${data.points.length} LAT/LON points shown.`;
+    })
+    .catch((error) => {
+      analyticsElements.dataStatus.textContent = "Data load failed";
+      areaElements.status.textContent = error.message;
+      console.error("NASA POWER analytics could not be loaded.", error);
+    });
+}
+
+analyticsElements.chartSelector.addEventListener("change", (event) => {
+  renderAnalyticsChart(event.target.value);
+});
 
 function selectArea(key, moveMap = true) {
   const area = areas[key];
@@ -334,6 +535,8 @@ function selectArea(key, moveMap = true) {
   Object.entries(areaLayers).forEach(([areaKey, layer]) => {
     layer.setStyle({ fillOpacity: areaKey === key ? 0.3 : 0.12, weight: areaKey === key ? 3 : 1 });
   });
+  powerPointsLayer.clearLayers();
+  if (key === "eastern-washington") loadPowerData();
   if (moveMap) farmMap.flyTo(area.coordinates, area.zoom, { duration: 0.7 });
 }
 

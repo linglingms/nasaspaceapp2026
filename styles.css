@@ -112,6 +112,16 @@ h3 { margin-bottom: 8px; font-size: 1.2rem; }
 .legend-dot.moisture { background: var(--green); }
 .legend-dot.rainfall { background: #4a93bd; }
 .legend-dot.vegetation { background: var(--gold); }
+.chart-selector-label { display: block; margin-bottom: 6px; color: var(--green-dark); font-size: .76rem; font-weight: 700; }
+.chart-selector { width: 100%; margin-bottom: 16px; padding: 9px 10px; border: 1px solid var(--line); border-radius: 7px; color: var(--ink); background: white; font: inherit; }
+.analytics-chart { min-height: 270px; overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; background: #fbfdfb; }
+.analytics-svg { display: block; min-width: 640px; width: 100%; height: 270px; color: var(--muted); }
+.analytics-svg text { fill: var(--muted); font-size: 10px; }
+.analytics-svg .axis-line { stroke: #b8c9bd; stroke-width: 1; }
+.analytics-svg .chart-line { fill: none; stroke: var(--green); stroke-width: 3; }
+.analytics-svg .chart-dots circle { fill: var(--gold); stroke: white; stroke-width: 1; }
+.analytics-svg .chart-bar { fill: #69b88b; }
+.analytics-svg .chart-bar-value { fill: var(--green-dark); font-weight: 700; }
 .data-table-wrap { overflow-x: auto; }
 .data-table { width: 100%; border-collapse: collapse; font-size: .76rem; }
 .data-table th { color: var(--green-dark); background: #f0f7f1; font-size: .7rem; text-align: left; text-transform: uppercase; }

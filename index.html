@@ -116,7 +116,7 @@
         <div class="map-layout">
           <div class="map-card">
             <div id="farm-map" aria-label="Interactive map of example farming regions"></div>
-            <p class="map-caption">Illustrative areas only — no farm boundaries or live NASA layers are shown yet.</p>
+            <p class="map-caption">NASA POWER sample points appear when the Eastern Washington dataset is selected.</p>
           </div>
           <aside class="area-panel" aria-live="polite">
             <p class="eyebrow">Selected focus area</p>
@@ -135,6 +135,7 @@
               <button class="area-option active" type="button" data-area="great-plains">Great Plains</button>
               <button class="area-option" type="button" data-area="central-valley">Central Valley</button>
               <button class="area-option" type="button" data-area="east-africa">East Africa</button>
+              <button class="area-option" type="button" data-area="eastern-washington">Eastern Washington data</button>
             </div>
           </aside>
         </div>
@@ -230,46 +231,37 @@
         <div class="data-layout">
           <article class="data-card">
             <div class="data-card-header">
-              <div><span class="stat-label">Chart scaffold</span><h3>Seasonal field conditions</h3></div>
-              <span class="data-status">No data loaded</span>
+              <div><span class="stat-label">NASA POWER analytics</span><h3 id="chart-title">Monthly temperature</h3></div>
+              <span class="data-status" id="data-status">Select Eastern Washington data</span>
             </div>
-            <div class="chart-placeholder" role="img" aria-label="Empty chart awaiting seasonal NASA and field data">
-              <span class="chart-y-label">Value</span>
-              <div class="chart-area">
-                <div class="chart-gridline"></div>
-                <div class="chart-gridline"></div>
-                <div class="chart-gridline"></div>
-                <div class="chart-gridline"></div>
-                <span class="chart-empty-message">NASA and field observations will appear here</span>
-                <div class="chart-x-labels"><span>Pre-season</span><span>Planting</span><span>Mid-season</span><span>Harvest</span></div>
-              </div>
-              <span class="chart-x-label">Season / date</span>
+            <label class="chart-selector-label" for="chart-selector">Chart view</label>
+            <select id="chart-selector" class="chart-selector">
+              <option value="monthly-temperature">Monthly temperature</option>
+              <option value="monthly-precipitation">Monthly precipitation</option>
+              <option value="monthly-stress">Monthly stress-risk proxy</option>
+              <option value="monthly-solar">Monthly solar radiation</option>
+              <option value="zones">Environmental zones</option>
+              <option value="feature-importance">Random Forest feature importance</option>
+            </select>
+            <div id="analytics-chart" class="analytics-chart" role="img" aria-label="NASA POWER analytics chart">
+              <p class="chart-empty-message">Select Eastern Washington data to load NASA POWER analytics.</p>
             </div>
-            <div class="chart-legend">
-              <span><i class="legend-dot moisture"></i>Soil moisture</span>
-              <span><i class="legend-dot rainfall"></i>Rainfall</span>
-              <span><i class="legend-dot vegetation"></i>Vegetation index</span>
-            </div>
+            <p id="chart-description" class="data-footnote">The chart uses the monthly and model outputs derived from the notebook dataset.</p>
           </article>
           <article class="data-card">
             <div class="data-card-header">
-              <div><span class="stat-label">Schema scaffold</span><h3>Required model fields</h3></div>
-              <span class="data-status">Awaiting source</span>
+              <div><span class="stat-label">Data table</span><h3>NASA POWER observations</h3></div>
+              <span class="data-status" id="table-status">Awaiting source</span>
             </div>
             <div class="data-table-wrap">
               <table class="data-table">
-                <thead><tr><th>Field</th><th>Type</th><th>Purpose</th></tr></thead>
-                <tbody>
-                  <tr><td>field_id</td><td>Text</td><td>Stable field identifier</td></tr>
-                  <tr><td>observation_date</td><td>Date</td><td>NASA or farm observation time</td></tr>
-                  <tr><td>soil_moisture</td><td>Decimal</td><td>Outcome for causal analysis</td></tr>
-                  <tr><td>rainfall_mm</td><td>Decimal</td><td>Weather exposure</td></tr>
-                  <tr><td>rotation_method</td><td>Category</td><td>Strategy or treatment</td></tr>
-                  <tr><td>vegetation_index</td><td>Decimal</td><td>Crop stress signal</td></tr>
+                <thead><tr><th>LAT</th><th>LON</th><th>Date</th><th>T2M</th><th>Rain (mm)</th></tr></thead>
+                <tbody id="analytics-table-body">
+                  <tr><td colspan="5">Select Eastern Washington data to load observations.</td></tr>
                 </tbody>
               </table>
             </div>
-            <p class="data-footnote">Additional fields will include elevation, slope, soil type, crop stage, irrigation, and uncertainty.</p>
+            <p id="dataset-note" class="data-footnote">The web app uses a compact derived file from the executed NASA POWER notebook.</p>
           </article>
         </div>
       </section>
