@@ -11,37 +11,8 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
       crossorigin=""
     />
-    <script>
-      // Decide before first paint whether the opening sequence plays (once per session).
-      (function () {
-        var force = /[?&]intro(capture)?(=|&|$)/.test(location.search);
-        var seen = false;
-        try { seen = sessionStorage.getItem("tc-intro-seen") === "1"; } catch (e) {}
-        var reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        if (!force && (seen || reduce)) return;
-        document.documentElement.classList.add("intro-active");
-        if (!/introcapture/.test(location.search)) {
-          setTimeout(function () {
-            if (!window.__introStarted) {
-              document.documentElement.classList.remove("intro-active");
-              var el = document.getElementById("intro");
-              if (el) el.remove();
-            }
-          }, 8000);
-        }
-      })();
-    </script>
-    <script type="importmap">
-      { "imports": { "three": "./vendor/three/build/three.module.min.js", "three/addons/": "./vendor/three/examples/jsm/" } }
-    </script>
   </head>
   <body>
-    <div id="intro" class="intro">
-      <canvas aria-hidden="true"></canvas>
-      <p class="intro-title">What should we plant next season?</p>
-      <div class="intro-rotation"><span>2025 Winter wheat</span><b>→</b><span>2026 Chickpea</span><b>→</b><span>2027 Spring wheat</span></div>
-      <button class="intro-skip" type="button">Skip intro</button>
-    </div>
     <a class="skip-link" href="#main-content">Skip to content</a>
     <header class="site-header">
       <div class="container header-content">
@@ -697,6 +668,5 @@
       crossorigin=""
     ></script>
     <script src="app.js"></script>
-    <script type="module" src="intro.js"></script>
   </body>
 </html>
